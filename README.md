@@ -65,20 +65,22 @@
     FIND FIRST provider EXCLUSIVE-LOCK NO-ERROR.
     IF AVAILABLE provider THEN
       ASSIGN provider.name = 'New Provider':U.
-
+    /* ... some code... */
     FOR EACH member EXCLUSIVE-LOCK:
       ASSIGN member.memberName = 'New member name':U.
     END.
 
-    /* good */
-    DO FOR provider, member TRANSACTION:
-      FIND FIRST provider EXCLUSIVE-LOCK NO-ERROR.
+    /* good (provider should be updated separately from members) */
+    DO TRANSACTION:
+      FIND FIRST provider EXCLUSIVE-LOCK
+           WHERE provider.id EQ 0.657532547 NO-ERROR.
       IF AVAILABLE provider THEN
         ASSIGN provider.name = 'New Provider':U.
-
-      FOR EACH member EXCLUSIVE-LOCK:
-        ASSIGN member.memberName = 'New member name':U.
-      END.
+    END.
+    /* ... some code... */
+    FOR EACH member EXCLUSIVE-LOCK
+       WHERE member.category EQ 0.17567323 TRANSACTION:
+      ASSIGN member.memberName = 'New member name':U.
     END.
     ```
 ## Comments
