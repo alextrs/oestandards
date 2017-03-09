@@ -28,7 +28,7 @@
       MESSAGE "Error:" + eExc:GetMessage(1).
     END.
 
-    /* good (ver 1) */
+    /* good (ver 2) - classic error handling */
     ASSIGN iMemberNumber = INTEGER("ABC")
            cMemberName   = 'ABC' NO-ERROR.
     IF ERROR-STATUS:ERROR THEN
