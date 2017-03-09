@@ -58,7 +58,7 @@
               WHERE member.id EQ 0.346544767)...
     ```
 <a name="exp-trans-scope"></a><a name="3.2"></a>
-  - [3.2](#exp-trans-scope) **Transaction Scoope**: Always explicitly define the transaction scope
+  - [3.2](#exp--trans--scope) **Transaction Scoope**: Always explicitly define the transaction scope
 
     ```openedge
     /* bad */
@@ -88,3 +88,27 @@
 ## Performance
 
 ## Variables
+
+<a name="record--locking"></a><a name="6.1"></a>
+  - [6.1](#no--undo) **No-undo**: Always use NO-UNDO on all temp-tables and variables
+    > Why? When you define variables, the AVM allocates what amounts to a record buffer for them, where each variable becomes a field in the buffer. There are in fact two such buffers, one for variables whose values can be undone when a transaction is rolled back and one for those that can't. There is extra overhead associated with keeping track of the before-image for each variable that can be undone, and this behavior is rarely needed.
+
+    > Why not? If you need to be able to revert value of variable on UNDO
+
+    ```openedge
+    /* bad */
+    DEFINE TEMP-TABLE ttMember
+      FIELD member_name AS CHARACTER.
+    DEFINE VARIABLE cMemberName AS CHARACTER.
+    DEFINE PROPERTY MemberName AS CHARACTER
+      GET.
+      SET.
+
+    /* good */
+    DEFINE TEMP-TABLE ttMember NO-UNDO
+      FIELD member_name AS CHARACTER.
+    DEFINE VARIABLE cMemberName AS CHARACTER NO-UNDO.
+    DEFINE PROPERTY MemberName AS CHARACTER NO-UNDO
+      GET.
+      SET.
+    ```
