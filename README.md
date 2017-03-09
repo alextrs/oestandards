@@ -57,7 +57,7 @@
     CAN-FIND (FIRST member NO-LOCK
               WHERE member.id EQ 0.346544767)...
     ```
-
+<a name="exp-trans-scope"></a><a name="3.2"></a>
   - [3.2](#exp-trans-scope) **Transaction Scoope**: Always explicitly define the transaction scope
 
     ```openedge
