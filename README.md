@@ -23,9 +23,7 @@
     /* good (ver 1) - using structured error handling */
     ASSIGN iMemberNumber = INTEGER("ABC")
            cMemberName   = 'ABC'.
-
     /* ... some code... */
-
     CATCH eExc AS Progress.Lang.ProError:
       MESSAGE "Error:" + eExc:GetMessage(1).
     END.
@@ -37,13 +35,6 @@
       DO:
         /* handle error here */
       END.
-
-    /* ... some code... */
-
-    CATCH eExc AS Progress.Lang.ProError:
-      /* handle error here */
-    END.
-
     ```
 
 ## Data Access
