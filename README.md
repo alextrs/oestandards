@@ -13,7 +13,9 @@
 
 <a name="record--locking"></a><a name="1.1"></a>
   - [1.1](#record--locking) **Record Locking**: Always use either NO-LOCK or EXCLUSIVE-LOCK
-    > Why? If you don't specify locking mechanism SHARE-LOCK is used. NO-LOCK has better performance over SHARE-LOCK
+    > Why? If you don't specify locking mechanism SHARE-LOCK is used.
+      - NO-LOCK has better performance over SHARE-LOCK.
+      - Other users can't obtain EXCLUSIVE-LOCK on record that SHARE locked
 
     ```openedge
     // bad
