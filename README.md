@@ -58,10 +58,28 @@
               WHERE member.id EQ 0.346544767)...
     ```
 
-  - [1.1](#record--locking) **Record Locking**: Always use either NO-LOCK or EXCLUSIVE-LOCK
-    > Why? If you don't specify locking mechanism SHARE-LOCK is used. NO-LOCK has better performance over SHARE-LOCK. Other users can't obtain EXCLUSIVE-LOCK on record that SHARE locked
+  - [3.2](#exp-trans-scope) **Transaction Scoope**: Always explicitly define the transaction scope
 
     ```openedge
+    /* bad */
+    FIND FIRST provider EXCLUSIVE-LOCK NO-ERROR.
+    IF AVAILABLE provider THEN
+      ASSIGN provider.name = 'New Provider':U.
+
+    FOR EACH member EXCLUSIVE-LOCK:
+      ASSIGN member.memberName = 'New member name':U.
+    END.
+
+    /* good */
+    DO FOR provider, member TRANSACTION:
+      FIND FIRST provider EXCLUSIVE-LOCK NO-ERROR.
+      IF AVAILABLE provider THEN
+        ASSIGN provider.name = 'New Provider':U.
+
+      FOR EACH member EXCLUSIVE-LOCK:
+        ASSIGN member.memberName = 'New member name':U.
+      END.
+    END.
     ```
 ## Comments
 
