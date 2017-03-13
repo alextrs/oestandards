@@ -39,7 +39,7 @@
 
 ## Data Access
 
-<a name="record--locking"></a><a name="1.1"></a>
+<a name="record--locking"></a><a name="3.1"></a>
   - [3.1](#record--locking) **Record Locking**: Always use either NO-LOCK or EXCLUSIVE-LOCK
     > Why? If you don't specify locking mechanism SHARE-LOCK is used. NO-LOCK has better performance over SHARE-LOCK. Other users can't obtain EXCLUSIVE-LOCK on record that SHARE locked
 
@@ -83,6 +83,26 @@
       ASSIGN member.memberName = 'New member name':U.
     END.
     ```
+
+<a name="record--locking"></a><a name="3.3"></a>
+  - [3.3](#record--locking) **No-wait**: When use NO-WAIT with NO-ERROR, always check whether record is LOCKED or not
+    > Why? When you use NO-WAIT with NO-ERROR and record is locked, it also is not available. Check for AVAIABLE only will most likely cause undesirable outcome.
+
+    ```openedge
+    /* bad */
+    FIND FIRST member EXCLUSIVE-LOCK
+         WHERE member.id EQ 0.346544767 NO-WAIT NO-ERROR.
+    IF NOT AVAILABLE member THEN
+      CREATE member.
+    /* good */
+    FIND FIRST member EXCLUSIVE-LOCK
+         WHERE member.id EQ 0.346544767 NO-WAIT NO-ERROR.
+    IF LOCKED member THEN
+      UNDO, THROW NEW Progress.Lang.AppError('Member record is current locked, please, try again later', 1000).
+    ELSE IF NOT AVAILABLE member THEN
+      CREATE member.
+    ```
+
 ## Comments
 
 ## Performance
