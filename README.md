@@ -186,17 +186,18 @@
 	```
 
 <a name="buffer--name"></a><a name="7.2"></a>
-  - [7.2](#buffer--name) **Buffer Name**: When define buffer, use b/b# with original buffer name
+  - [7.2](#buffer--name) **Buffer Name**: When define buffer, prefix with b
 	```openedge
 	/* bad */
 	DEFINE BUFFER MI1 FOR memberInfo.
 	DEFINE BUFFER bu-memberInfo FOR memberInfo.
 	DEFINE BUFFER memberInfoBuffer FOR memberInfo.
+	DEFINE BUFFER cMemberInfoBuffer FOR memberInfo.
 	DEFINE BUFFER bu-memberInfo-2 FOR memberInfo.
 	
 	/* good */
 	DEFINE BUFFER bMemberInfo FOR memberInfo.
-	DEFINE BUFFER b2MemberInfo FOR memberInfo.
+	DEFINE BUFFER bMemberInfo2 FOR memberInfo.
 	DEFINE BUFFER bProviderData FOR providerData.
 	DEFINE BUFFER b_Field FOR _Field.
 	DEFINE BUFFER bttMyTable FOR TEMP-TABLE ttMyTable.
@@ -217,4 +218,23 @@
 	 DEFINE VARIABLE oMemberInfo   AS member.info  NO-UNDO.
 	 DEFINE VARIABLE lcMemberNode  AS LONGCHAR     NO-UNDO.
 	 ```
-	 
+
+<a name="variable--meaning"></a><a name="7.4"></a>
+  - [7.4](#variable--meaning) **Meaningful Names**: Define variables with meaningful names (applicable to context), but avoid extra long names (use abbreviations when possible)
+  	
+  	```openedge
+	/* bad */
+	DEFINE VARIABLE cMI AS CHARACTER NO-UNDO.
+	/* good */
+	DEFINE VARIABLE cMemberInfo AS CHARACTER NO-UNDO.
+	
+	/* bad */
+	DEFINE VARIABLE cNationalDrugCode AS CHARACTER NO-UNDO.
+	/* good */
+	DEFINE VARIABLE cNDC AS CHARACTER NO-UNDO.
+	
+	/* bad */
+	DEFINE VARIABLE cNationalDrugCodeRequiredIdentification NO-UNDO.
+	/* good */
+	DEFINE VARIABLE cNDCReqId AS CHARACTER NO-UNDO.
+	```
