@@ -7,6 +7,7 @@
 1. [Comments](#comments)
 1. [Performance](#performance)
 1. [Variables](#variables)
+1. [Naming Conventions](#naming-conventions)
 
 ## Objects
 
@@ -84,8 +85,8 @@
     END.
     ```
 
-<a name="record--locking"></a><a name="3.3"></a>
-  - [3.3](#record--locking) **No-wait**: When use NO-WAIT with NO-ERROR, always check whether record is LOCKED or not
+<a name="no--wait"></a><a name="3.3"></a>
+  - [3.3](#no--wait) **No-wait**: When use NO-WAIT with NO-ERROR, always check whether record is LOCKED or not
     > Why? When you use NO-WAIT with NO-ERROR and record is locked, it also is not available. Check for AVAIABLE only will most likely cause undesirable outcome.
 
     ```openedge
@@ -132,3 +133,56 @@
       GET.
       SET.
     ```
+
+## Naming Conventions
+<a name="variable--case"></a><a name="7.1"></a>
+  - [7.1](#variable-case) **Variable Case**: Use appropriate case when naming variable
+  	
+  	* When define variable use camelCase
+  	```openedge
+  	/* bad */
+  	DEFINE VARIABLE Member_Name AS CHARACTER NO-UNDO.
+  	DEFINE VARIABLE MEMBERNAME  AS CHARACTER NO-UNDO.
+  	DEFINE VARIABLE membername  AS CHARACTER NO-UNDO.
+  	DEFINE VARIABLE MeMbErNaMe  AS CHARACTER NO-UNDO.
+  	/* good */
+  	DEFINE VARIABLE cMemberName AS CHARACTER NO-UNDO.
+	```
+	
+	* When define property use camelCase, unless you do it in GUI for .NET, then use PascalCase
+	```openedge
+	/* bad */
+	DEFINE PROPERTY Member_Name AS CHARACTER NO-UNDO
+	  GET.
+	  SET.
+	DEFINE PROPERTY MeMbErNaMe AS CHARACTER NO-UNDO
+	  GET.
+	  SET.
+	
+	/* good for GUI for .NET */
+	DEFINE PROPERTY MemberName AS CHARACTER NO-UNDO
+	  GET.
+	  SET.
+
+	/* good */
+	DEFINE PROPERTY memberName AS CHARACTER NO-UNDO
+	  GET.
+	  SET.
+	```
+
+<a name="variable--type"></a><a name="7.2"></a>
+  - [7.2](#variable--type) **Variable Type**: Prefix variable name with it's type
+
+    ```openedge
+	 DEFINE VARIABLE cMemberName   AS CHARACTER    NO-UNDO.
+	 DEFINE VARIABLE iMemberNumber AS INTEGER      NO-UNDO.
+	 DEFINE VARIABLE dMemberId     AS DECIMAL      NO-UNDO.
+	 DEFINE VARIABLE hMemberReq    AS HANDLE       NO-UNDO.
+	 DEFINE VARIABLE dtStartDate   AS DATE         NO-UNDO.
+	 DEFINE VARIABLE dtzEndDate    AS DATETIME-TZ  NO-UNDO.
+	 DEFINE VARIABLE mMemberDoc    AS MEMPTR       NO-UNDO.
+	 DEFINE VARIABLE rMemberKey    AS RAW          NO-UNDO.
+	 DEFINE VARIABLE oMemberInfo   AS member.info  NO-UNDO.
+	 DEFINE VARIABLE lcMemberNode  AS LONGCHAR     NO-UNDO.
+	 ```
+	 
