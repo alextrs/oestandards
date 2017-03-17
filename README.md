@@ -142,11 +142,26 @@
   	```openedge
   	/* bad */
   	DEFINE VARIABLE Member_Name AS CHARACTER NO-UNDO.
-  	DEFINE VARIABLE MEMBERNAME  AS CHARACTER NO-UNDO.
   	DEFINE VARIABLE membername  AS CHARACTER NO-UNDO.
   	DEFINE VARIABLE MeMbErNaMe  AS CHARACTER NO-UNDO.
   	/* good */
   	DEFINE VARIABLE cMemberName AS CHARACTER NO-UNDO.
+	```
+
+	* When define constants use UPPER_CASE
+	```openedge
+  	/* bad */
+  	DEFINE PRIVATE PROPERTY lineseparator AS CHARACTER NO-UNDO INIT '|':U
+  		GET.
+  	DEFINE PRIVATE PROPERTY LineSeparator AS CHARACTER NO-UNDO INIT '|':U
+  		GET.
+  	DEFINE PRIVATE PROPERTY cLineSeparator AS CHARACTER NO-UNDO INIT '|':U
+  		GET.
+  	DEFINE PRIVATE PROPERTY LINESEPARATOR AS CHARACTER NO-UNDO INIT '|':U
+  		GET.
+  	/* good */
+  	DEFINE PRIVATE PROPERTY LINE_SEPARATOR AS CHARACTER NO-UNDO INIT '|':U
+  		GET.
 	```
 	
 	* When define property use camelCase, unless you do it for GUI for .NET, then use PascalCase
@@ -184,7 +199,7 @@
 	DEFINE BUFFER b2MemberInfo FOR memberInfo.
 	DEFINE BUFFER bProviderData FOR providerData.
 	DEFINE BUFFER b_Field FOR _Field.
-	DEFINE BUFFER bttMyTable FOR ttMyTable.
+	DEFINE BUFFER bttMyTable FOR TEMP-TABLE ttMyTable.
 	```
 
 <a name="variable--type"></a><a name="7.3"></a>
