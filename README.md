@@ -149,7 +149,7 @@
   	DEFINE VARIABLE cMemberName AS CHARACTER NO-UNDO.
 	```
 	
-	* When define property use camelCase, unless you do it in GUI for .NET, then use PascalCase
+	* When define property use camelCase, unless you do it for GUI for .NET, then use PascalCase
 	```openedge
 	/* bad */
 	DEFINE PROPERTY Member_Name AS CHARACTER NO-UNDO
@@ -170,8 +170,25 @@
 	  SET.
 	```
 
-<a name="variable--type"></a><a name="7.2"></a>
-  - [7.2](#variable--type) **Variable Type**: Prefix variable name with it's type
+<a name="buffer--name"></a><a name="7.2"></a>
+  - [7.2](#buffer--name) **Buffer Name**: When define buffer, use b/b# with original buffer name
+	```openedge
+	/* bad */
+	DEFINE BUFFER MI1 FOR memberInfo.
+	DEFINE BUFFER bu-memberInfo FOR memberInfo.
+	DEFINE BUFFER memberInfoBuffer FOR memberInfo.
+	DEFINE BUFFER bu-memberInfo-2 FOR memberInfo.
+	
+	/* good */
+	DEFINE BUFFER bMemberInfo FOR memberInfo.
+	DEFINE BUFFER b2MemberInfo FOR memberInfo.
+	DEFINE BUFFER bProviderData FOR providerData.
+	DEFINE BUFFER b_Field FOR _Field.
+	DEFINE BUFFER bttMyTable FOR ttMyTable.
+	```
+
+<a name="variable--type"></a><a name="7.3"></a>
+  - [7.3](#variable--type) **Variable Type**: Prefix variable name with it's type
 
     ```openedge
 	 DEFINE VARIABLE cMemberName   AS CHARACTER    NO-UNDO.
