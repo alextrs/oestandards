@@ -246,7 +246,7 @@
 
 ## Dynamic Objects
 <a name="delete--objects"></a><a name="8.1"></a>
-  - [8.1](#delete--objects) **Delete Dynamic Objects**: Make sure you always delete dynamic objects. Use FINNALY block to make sure object will be deleted.
+  - [8.1](#delete--objects) **Delete Dynamic Objects**: Always delete dynamic objects. Use FINNALY block to make sure object will be deleted.
     > Why? Progress garbage collector takes care of objects, but doesn't handle dynamic objects (BUFFERS, TABLES, QUERIES, PERSISTENT PROCEDURES and etc)
     
     ```openedge
