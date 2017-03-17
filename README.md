@@ -150,7 +150,7 @@
 
 	* When define constants use UPPER_CASE
 	```openedge
-  	/* bad */
+  	/* bad */ 
   	DEFINE PRIVATE PROPERTY lineseparator AS CHARACTER NO-UNDO INIT '|':U
   		GET.
   	DEFINE PRIVATE PROPERTY LineSeparator AS CHARACTER NO-UNDO INIT '|':U
