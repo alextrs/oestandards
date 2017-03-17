@@ -255,7 +255,7 @@
       DEFINE OUTPUT PARAMETER oplValidMember AS LOGICAL NO-UNDO.
       DEFINE VARIABLE hMemberBuffer AS HANDLE NO-UNDO.
 
-      CREATE BUFFER hMemberBuffer FOR db + '.memberInfo'.
+      CREATE BUFFER hMemberBuffer FOR db + '.memberInfo'. 
       /* ... */
       ASSIGN oplValidMember = TRUE.
       RETURN.
