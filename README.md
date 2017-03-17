@@ -8,6 +8,7 @@
 1. [Performance](#performance)
 1. [Variables](#variables)
 1. [Naming Conventions](#naming-conventions)
+1. [Dynamic Objects](#dynamic-objects)
 
 ## Objects
 
@@ -139,6 +140,7 @@
   - [7.1](#variable-case) **Variable Case**: Use appropriate case when naming variable
   	
   	* When define variable use camelCase
+  	
   	```openedge
   	/* bad */
   	DEFINE VARIABLE Member_Name AS CHARACTER NO-UNDO.
@@ -149,6 +151,7 @@
 	```
 
 	* When define constants use UPPER_CASE
+	
 	```openedge
   	/* bad */ 
   	DEFINE PRIVATE PROPERTY lineseparator AS CHARACTER NO-UNDO INIT '|':U
@@ -165,6 +168,7 @@
 	```
 	
 	* When define property use camelCase, unless you do it for GUI for .NET, then use PascalCase
+	
 	```openedge
 	/* bad */
 	DEFINE PROPERTY Member_Name AS CHARACTER NO-UNDO
@@ -187,6 +191,7 @@
 
 <a name="buffer--name"></a><a name="7.2"></a>
   - [7.2](#buffer--name) **Buffer Name**: When define buffer, prefix with b
+  
 	```openedge
 	/* bad */
 	DEFINE BUFFER MI1 FOR memberInfo.
@@ -238,3 +243,38 @@
 	/* good */
 	DEFINE VARIABLE cNDCReqId AS CHARACTER NO-UNDO.
 	```
+
+## Dynamic Objects
+<a name="delete--objects"></a><a name="8.1"></a>
+  - [8.1](#delete--objects) **Delete Dynamic Objects**: Make sure you always delete dynamic objects. Use FINNALY block to make sure object will be deleted.
+    > Why? Progress garbage collector takes care of objects, but doesn't handle dynamic objects (BUFFERS, TABLES, QUERIES, PERSISTENT PROCEDURES and etc)
+    
+    ```openedge
+    /* bad */
+    PROCEDURE checkMember:
+      DEFINE OUTPUT PARAMETER oplValidMember AS LOGICAL NO-UNDO.
+      DEFINE VARIABLE hMemberBuffer AS HANDLE NO-UNDO.
+
+      CREATE BUFFER hMemberBuffer FOR db + '.memberInfo'.
+      /* ... */
+      ASSIGN oplValidMember = TRUE.
+      RETURN.
+    END.
+    
+    /* good */
+    PROCEDURE checkMember:
+      DEFINE OUTPUT PARAMETER oplValidMember AS LOGICAL NO-UNDO.
+      DEFINE VARIABLE hMemberBuffer AS HANDLE NO-UNDO.
+
+      CREATE BUFFER hMemberBuffer FOR db + '.memberInfo'.
+      /* ... */
+      ASSIGN oplValidMember = TRUE.
+      RETURN.
+      FINALLY:
+        IF VALID-HANDLE(hMemberBuffer) THEN
+          DELETE OBJECT hMemberBuffer.
+      END.
+    END.
+    ```
+    
+  
