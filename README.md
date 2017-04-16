@@ -13,7 +13,7 @@
 ## Objects
 
 ## Error Handling
-<a name="no--error"></a><a name="1.1"></a>
+<a name="no--error"></a><a name="2.1"></a>
   - [2.1](#no--error) **NO-ERROR**: Use NO-ERROR only when you expect an error to occur and if used handle error appropriately
     > Why? NO-ERROR suppresses errors, which can cause database consistency, memory leaks, infinite loops and more...
 
@@ -39,6 +39,78 @@
       END.
     ```
 
+<a name="no--error"></a><a name="2.2"></a>
+  - [2.2](#routine-level) **BLOCK-LEVEL THROW** Always use BLOCK-LEVEL ON ERROR UNDO, THROW statement 
+   > Why? It changes the default ON ERROR directive to UNDO, THROW for all blocks (from default UNDO, LEAVE or UNDO, RETRY)
+   
+   > Note: Use this parameter in legacy systems only. For new development use _-undothrow 2_ to set BLOCK-LEVEL ON ERROR UNDO, THROW everywhere 
+
+   ````openedge
+   /* bad (default ON ERROR directive used) */
+   RUN internalProcedure.
+   
+   CATCH eExc AS Progress.Lang.AppError:
+     /* this will never be executed */
+   END.
+   
+   PROCEDURE internalProcedure:
+     UNDO, THROW NEW Progress.Lang.AppError('Error String', 1000).
+   END.
+   ````
+
+   ````openedge
+   /* bad (routine-level doesn't cover for loops) */
+   ROUTINE-LEVEL ON ERROR UNDO, THROW.
+   RUN internalProcedure.
+   
+   CATCH eExc AS Progress.Lang.AppError:
+     /* this will never be executed */
+   END.
+   
+   PROCEDURE internalProcedure:
+     FOR EACH memberRecord:
+       UNDO, THROW NEW Progress.Lang.AppError('Error String', 1000).
+     END.
+   END.
+   ````
+
+<a name="no--error"></a><a name="2.2"></a>
+  - [2.3](#catch-block) **CATCH/THROW** Use CATCH/THROW instead of class error handling (NO-ERROR / ERROR-STATUS).
+  > Why? One place to catch all errors. 
+  > Why? No need to handle errors every time they occur. No need to return error as output parameter and then handle them on every call.
+
+  ````openedge
+  /* bad */
+  RUN myCheck (OUTPUT cErrorMessage) NO-ERROR.
+  IF ERROR-STATUS:ERROR THEN
+    MESSAGE "Error: " + ERROR-STATUS:GET-MESSAGE(1).
+  ELSE IF cErrorMessage GT '' THEN
+    MESSAGE "Error: " + cErrorMessage.
+  
+  PROCEDURE myCheck:
+    DEFINE OUTPUT PARAMETER opoStatusMessage AS CHARACTER NO-UNDO.
+    
+    IF NOT CAN-FIND (FIRST member) THEN
+      DO:
+        ASSIGN opoStatusMessage = 'Can not find member, try again'.
+        RETURN.
+      END.
+  END.
+ 
+  /* good (any application or system error will be catched by CATCH block) */
+  RUN myCheck.
+  
+  CATCH eExc AS Progress.Lang.ProError:
+      MESSAGE "Error: " + eExc:GetMessage(1).
+  END.
+  
+  PROCEDURE myCheck:
+    IF NOT CAN-FIND (FIRST member) THEN
+      UNDO, THROW NEW Progress.Lang.AppError('Can not find member, try again', 1000).
+    END.
+  
+  ````
+   
 ## Data Access
 
 <a name="record--locking"></a><a name="3.1"></a>
