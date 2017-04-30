@@ -193,6 +193,23 @@
          WHERE ROWID(member) EQ rMemberRowId NO-ERROR.
     ```
 
+<a name="use--canfind"></a><a name="3.5"></a>
+  - [3.5](#use--canfind) **CAN-FIND**: Use CAN-FIND instead of FIND FIRST/LAST or FOR FIRST/LAST if all you need is to check that record exists
+    
+    ```openedge
+    /* bad */
+    FIND FIRST member NO-LOCK
+         WHERE ROWID(member) EQ rMemberRowId NO-ERROR.
+    IF AVAIABLE member THEN
+        RETURN TRUE.
+    ELSE
+        RETURN FALSE.
+        
+    /* good */
+    RETURN CAN-FIND (FIRST member NO-LOCK
+                     WHERE ROWID(member) EQ rMemberRowId).
+    ```
+
 ## Comments
 <a name="comm-header"></a><a name="4.1"></a>
   - [4.1](#comm-header) **Header comments**: Every class or external procedure has to have header aligned to ABLDocs format
