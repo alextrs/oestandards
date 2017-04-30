@@ -181,6 +181,18 @@
       CREATE member.
     ```
 
+<a name="no--recid"></a><a name="3.4"></a>
+  - [3.4](#no--recid) **No RECID**: Don't use RECID, use ROWID. Don't store ROWID or RECID in database, use surrogate keys
+    > Why ROWID? RECID supported only for backward compatibility
+    
+    > Why don't store? ROWID and RECID change after dump and load process. The same ROWID/RECID can be found in the same table (when multi-tenancy or data-partitioning is used)
+
+    ```openedge
+    /* good */
+    FIND FIRST member NO-LOCK
+         WHERE ROWID(member) EQ rMemberRowId NO-ERROR.
+    ```
+
 ## Comments
 <a name="comm-header"></a><a name="4.1"></a>
   - [4.1](#comm-header) **Header comments**: Every class or external procedure has to have header aligned to ABLDocs format
@@ -507,7 +519,7 @@
     IF memberDOB > 01/01/1980 THEN
       RETURN memberDOB.
       
-<a name="blk--indentation"></a><a name="9.2"></a>
+<a name="blk--indentation"></a><a name="9.4"></a>
   - [9.4](#blk--indentation) **Block Indentation**: Use correct block indentation: DO statements on next line with 2 characters, otherwise 4 characters. __Make sure you configured Tab policy in Eclipse to use Spaces only (4 spaces per tab)__
 
     ```openedge
@@ -536,7 +548,7 @@
     IF memberDOB GT 01/01/1980 THEN
         RETURN memberName.
         
-    /* good (new line + tab) */
+    /* good (new line + do (2 chars) + new line + tab) */
     IF memberDOB GT 01/01/1980 THEN
       DO:
         ...
@@ -544,6 +556,14 @@
       END.
       
     ```
+
+<a name="if--parens"></a><a name="9.5"></a>
+  - [9.5](#if--parens) **If Parentheses**: Always use parentheses when have AND and OR conditions
+    > Why? Even though precedence order is known some people forget it or get mixed.
+
+    ```openedge
+    IF (isValidMember OR showAll) AND (memberDOB < 01/01/1982 OR memberStatus = 'A') THEN
+      ...
 
 
 # Other    
@@ -582,9 +602,18 @@
            member.name = 'John'
            member.ssn  = '000-00-0000' WHEN lKeepSSN
            member.mid  = IF NOT lKeepSSN THEN '111' ELSE '000-00-0000'.
-    ```
-
-<a name=""></a><a name="10.3"></a>
-  - [10.3](#assign--statement) **Assign Statement**: Always use ASSIGN statement
-    > Why? This method allows you to change several values with minimum I/O processing. Otherwise, the AVM re-indexes records at the end of each statement that changes the value of an index component.
-  
+    ```  
+<a name="use--substitute"></a><a name="10.4"></a>
+  - [10.4](#use--substitute) **Use Substitute**: Use SUBSTITUTE to concatenate multiple values
+    > Why? If you try to concatenate values and one of the values is ? the entire result becomes ?, which is in most cases undesirable result.
+    
+    ```openedge
+    ASSIGN cMemberName = 'John'
+           dMemberDOB  = 01/01/1980
+           cMemberAge  = ?.
+    /* bad - show = ? */
+    MESSAGE cMemberName + STRING(dMemberDOB) + cMemberAge VIEW-AS ALERT-BOX.
+    
+    /* good - show 'John 01/01/1980 ?' */
+    MESSAGE SUBSTITUTE('&1 &2 &3', cMemberName, dMemberDOB, cMemberAge).
+    ```  
