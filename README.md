@@ -9,6 +9,7 @@
 1. [Variables](#variables)
 1. [Naming Conventions](#naming-conventions)
 1. [Dynamic Objects](#dynamic-objects)
+1. [Code Styling](#code-styling)
 1. [Other](#other)
 
 ## Objects
@@ -170,6 +171,7 @@
          WHERE member.id EQ 0.346544767 NO-WAIT NO-ERROR.
     IF NOT AVAILABLE member THEN
       CREATE member.
+        
     /* good */
     FIND FIRST member EXCLUSIVE-LOCK
          WHERE member.id EQ 0.346544767 NO-WAIT NO-ERROR.
@@ -180,6 +182,64 @@
     ```
 
 ## Comments
+<a name="comm-header"></a><a name="4.1"></a>
+  - [4.1](#comm-header) **Header comments**: Every class or external procedure has to have header aligned to ABLDocs format
+    ```openedge
+    /*------------------------------------------------------------------------
+        File        : getMinUserInfo.p
+        Purpose     : Use to find and return user information
+        Syntax      : RUN getMinUserInfo.p (userId, OUTPUT dsUserInfo).
+        Description : This procedure finds user information and returns it in ProDataSet
+        Author(s)   : Aliaksandr Tarasevich
+        Created     : <pre>Tue Nov 19 21:16:10 CET</pre>
+        Notes       : Use to only retrieve minimal user information, otherwise, use getAllUserInfo.p
+      ----------------------------------------------------------------------*/
+    ```
+<a name="comm--proc--func"></a><a name="4.2"></a>
+  - [4.2](#comm--proc--func) **Internal comments**: Use comments in internal procedures, functions, methods aligned to ABLDocs format
+    ```openedge
+    /*------------------------------------------------------------------------------
+     Purpose: Find a member and return TRUE if this member is active
+     Notes: Doesn't take into account temporary member status
+     @param ipdMemberId - member Id
+     @return Is member active?
+    ------------------------------------------------------------------------------*/
+    METHOD PUBLIC LOGICAL isMemberActive (INPUT ipdMemberId AS DECIMAL):
+    END METHOD.
+        
+    PROCEDURE isMemberActive:
+      /*------------------------------------------------------------------------------
+       Purpose: Find a member and return TRUE if this member is active
+       Notes: Doesn't take into account temporary member status
+       @param ipdMemberId - member Id
+       @return Is member active?
+      ------------------------------------------------------------------------------*/
+    
+      DEFINE INPUT  PARAMETER ipdMemberId AS DECIMAL NO-UNDO.
+      DEFINE OUTPUT PARAMETER oplIsActive AS LOGICAL NO-UNDO.
+    END PROCEDURE.
+        
+    FUNCTION isMemberActive RETURNS LOGICAL (INPUT ipdMemberId AS DECIMAL):
+      /*------------------------------------------------------------------------------
+       Purpose: Find a member and return TRUE if this member is active
+       Notes: Doesn't take into account temporary member status
+       @param ipdMemberId - member Id
+       @return Is member active?
+      ------------------------------------------------------------------------------*/
+    END FUNCTION.
+    ```
+
+<a name="class--props"></a><a name="4.3"></a>
+  - [4.3](#class--props) **Class Properties**: Use comments for properties aligned to ABLDocs format
+    ```openedge
+    /*
+       Indicates whether document was previously loaded or not
+     */
+    DEFINE PUBLIC PROPERTY docLoaded AS LOGICAL NO-UNDO
+      GET.
+      PROTECTED SET.
+    ```
+
 
 ## Performance
 <a name="use--for--first"></a><a name="9.2"></a>
@@ -217,7 +277,7 @@
           RETURN member.id.
         END.
     END.
-    
+        
     /* good (if this find was called from static/singleton class - record will lock will be released) */
     METHOD PUBLIC CHARACTER getMember():
       DEFINE BUFFER bMember FOR member.
@@ -249,7 +309,7 @@
     DEFINE PROPERTY MemberName AS CHARACTER
       GET.
       SET.
-
+        
     /* good */
     DEFINE TEMP-TABLE ttMember NO-UNDO
       FIELD member_name AS CHARACTER.
@@ -286,6 +346,7 @@
   		GET.
   	DEFINE PRIVATE PROPERTY LINESEPARATOR AS CHARACTER NO-UNDO INIT '|':U
   		GET.
+    
   	/* good */
   	DEFINE PRIVATE PROPERTY LINE_SEPARATOR AS CHARACTER NO-UNDO INIT '|':U
   		GET.
@@ -301,12 +362,12 @@
 	DEFINE PROPERTY MeMbErNaMe AS CHARACTER NO-UNDO
 	  GET.
 	  SET.
-	
+	    
 	/* good for GUI for .NET */
 	DEFINE PROPERTY MemberName AS CHARACTER NO-UNDO
 	  GET.
 	  SET.
-
+    
 	/* good */
 	DEFINE PROPERTY memberName AS CHARACTER NO-UNDO
 	  GET.
@@ -323,7 +384,7 @@
 	DEFINE BUFFER memberInfoBuffer FOR memberInfo.
 	DEFINE BUFFER cMemberInfoBuffer FOR memberInfo.
 	DEFINE BUFFER bu-memberInfo-2 FOR memberInfo.
-	
+	    
 	/* good */
 	DEFINE BUFFER bMemberInfo FOR memberInfo.
 	DEFINE BUFFER bMemberInfo2 FOR memberInfo.
@@ -356,12 +417,12 @@
 	DEFINE VARIABLE cMI AS CHARACTER NO-UNDO.
 	/* good */
 	DEFINE VARIABLE cMemberInfo AS CHARACTER NO-UNDO.
-	
+	    
 	/* bad */
 	DEFINE VARIABLE cNationalDrugCode AS CHARACTER NO-UNDO.
 	/* good */
 	DEFINE VARIABLE cNDC AS CHARACTER NO-UNDO.
-	
+	    
 	/* bad */
 	DEFINE VARIABLE cNationalDrugCodeRequiredIdentification NO-UNDO.
 	/* good */
@@ -384,7 +445,7 @@
       ASSIGN oplValidMember = TRUE.
       RETURN.
     END.
-    
+        
     /* good */
     PROCEDURE checkMember:
       DEFINE OUTPUT PARAMETER oplValidMember AS LOGICAL NO-UNDO.
@@ -400,9 +461,94 @@
       END.
     END.
     ```
-# Dynamic Objects    
-<a name="block--labels"></a><a name="9.1"></a>
-  - [9.1](#block--labels) **Block Labels**: Always use block labels
+# Code Styling
+<a name="unnecessary-blocks"></a><a name="9.1"></a>
+  - [9.1](#unnecessary-blocks) **Unnecessary Blocks**: Don't create unnecessary DO blocks
+
+    ```openedge
+    /* bad */
+    IF NOT isValidMember(member.id) THEN
+      DO:
+        UNDO, THROW NEW Progress.Lang.AppError('Invalid Member', 1000).
+      END.
+      
+    /* good */
+    IF NOT isValidMember(member.id) THEN
+      UNDO, THROW NEW Progress.Lang.AppError('Invalid Member', 1000).
+    ```
+
+<a name="comp--operators"></a><a name="9.2"></a>
+  - [9.2](#comp--operators) **Comparison operators**: Use comparison operators: EQ(=), LT(<), LE(<=), GT(>), GE(>=), NE(<>) 
+    > Why? It's easier to see/parse places whether we compare or assign values 
+
+    ```openedge
+    /* bad */
+    IF memberDOB > 01/01/1980 THEN
+        
+    /* good */
+    IF memberDOB GT 01/01/1980 THEN
+    ```
+
+<a name="same--line-dot"></a><a name="9.3"></a>
+  - [9.3](#same--line-dot) **Dot Same Line** Put dot on the same line:  
+
+    ```openedge
+    /* bad */
+    IF memberDOB > 01/01/1980 THEN
+      RETURN memberDOB
+      .
+      
+    /* bad */
+    IF memberDOB > 01/01/1980 THEN
+      RETURN memberDOB
+    .
+        
+    /* good */
+    IF memberDOB > 01/01/1980 THEN
+      RETURN memberDOB.
+      
+<a name="blk--indentation"></a><a name="9.2"></a>
+  - [9.4](#blk--indentation) **Block Indentation**: Use correct block indentation: DO statements on next line with 2 characters, otherwise 4 characters. __Make sure you configured Tab policy in Eclipse to use Spaces only (4 spaces per tab)__
+
+    ```openedge
+    /* bad */
+    IF memberDOB > 01/01/1980 THEN ASSIGN RETURN memberName.
+        
+    /* bad */
+    IF memberDOB > 01/01/1980 THEN DO:
+      RETURN memberName.
+    END.
+        
+    /* bad */
+    IF memberDOB > 01/01/1980 THEN DO:
+    IF memberCode = 'OBC' THEN DO:
+    END.
+    END.
+        
+    /* bad */
+    IF memberDOB > 01/01/1980 THEN
+      RETURN memberName.
+      ELSE 
+        RETURN memberCode.
+    
+            
+    /* good (new line + tab) */
+    IF memberDOB GT 01/01/1980 THEN
+        RETURN memberName.
+        
+    /* good (new line + tab) */
+    IF memberDOB GT 01/01/1980 THEN
+      DO:
+        ...
+        RETURN memberName.
+      END.
+      
+    ```
+
+
+# Other    
+<a name="block--labels"></a><a name="10.1"></a>
+  - [10.1](#block--labels) **Block Labels**: Always use block labels
     > Why? If you do not name a block, the AVM leaves the innermost iterating block that contains the LEAVE statement. The same is applicable to UNDO and NEXT statements. THis can cause unexpected behaviour
 
     ```openedge
@@ -414,7 +560,7 @@
         UNDO, LEAVE.
       END.
     END.
-    
+        
     /* good */
     UpdateMembersBlk:
     DO TRANSACTION:
@@ -427,35 +573,18 @@
     
     ```
     
-<a name="unnecessary-blocks"></a><a name="9.2"></a>
-  - [9.2](#unnecessary-blocks) **Unnecessary Blocks**: Don't create unnecessary DO blocks
-
-  ```openedge
-  /* bad */
-  IF NOT isValidMember(member.id) THEN
-    DO:
-      UNDO, THROW NEW Progress.Lang.AppError('Invalid Member', 1000).
-    END.
-  
-  /* good */
-  IF NOT isValidMember(member.id) THEN
-    UNDO, THROW NEW Progress.Lang.AppError('Invalid Member', 1000).
-  ```
-  
-<a name="comp--operators"></a><a name="9.3"></a>
-  - [9.1](#comp--operators) **Comparison operators**: Use comparison operators: EQ(=), LT(<), LE(<=), GT(>), GE(>=), NE(<>) 
-    > Why? It's easier to see/parse places whether we compare or assign values 
-
+<a name="assign--statement"></a><a name="10.3"></a>
+  - [10.2](#assign--statement) **Assign Statement**: Always use ASSIGN statement
+    > Why? This method allows you to change several values with minimum I/O processing. Otherwise, the AVM re-indexes records at the end of each statement that changes the value of an index component.
+    
     ```openedge
-    /* bad */
-    IF memberDOB > 01/01/1980 THEN
-    /* good */
-    IF memberDOB GT 01/01/1980 THEN
+    ASSIGN member.dob  = 01/01/1980
+           member.name = 'John'
+           member.ssn  = '000-00-0000' WHEN lKeepSSN
+           member.mid  = IF NOT lKeepSSN THEN '111' ELSE '000-00-0000'.
     ```
 
-<a name=""></a><a name="9.3"></a>
-  - [9.1](#comp--operators) **Comparison operators**: Use comparison operators: EQ(=), LT(<), LE(<=), GT(>), GE(>=), NE(<>) 
-    > Why? It's easier to see/parse places whether we compare or assign values 
-
-
+<a name=""></a><a name="10.3"></a>
+  - [10.3](#assign--statement) **Assign Statement**: Always use ASSIGN statement
+    > Why? This method allows you to change several values with minimum I/O processing. Otherwise, the AVM re-indexes records at the end of each statement that changes the value of an index component.
   
