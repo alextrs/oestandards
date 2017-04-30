@@ -210,6 +210,43 @@
                      WHERE ROWID(member) EQ rMemberRowId).
     ```
 
+<a name="use--table--name"></a><a name="3.6"></a>
+  - [3.6](#use--table--name) **TABLE-NAME**: Always qualify table name for field name
+    
+    ```openedge
+    /* bad */
+    FIND FIRST member NO-LOCK NO-ERROR.
+    IF AVAIABLE member THEN
+        RETURN memberId.
+        
+    /* good */
+    FIND FIRST member NO-LOCK NO-ERROR.
+    IF AVAIABLE member THEN
+        RETURN member.memberId.
+    ```
+
+<a name="use--index"></a><a name="3.7"></a>
+  - [3.7](#use--index) **USE-INDEX**: Avoid using USE-INDEX statement. Use TABLE-SCAN if you need to read entire table.
+    >Why? AVM automatically selects the most appropriate index
+    
+    >Why not? If you need to force display order
+    
+    ```openedge
+    /* bad */
+    FOR EACH member NO-LOCK
+       WHERE member.DOB > 01/01/1982 USE-INDEX memberSSNIdx:
+    END.
+        
+    /* good (let AVM to choose index automatically). Use temp-table with appropriate index, if you need to have different order in UI */
+    FOR EACH member NO-LOCK
+       WHERE member.DOB > 01/01/1982:
+    END.
+        
+    /* good (if the whole table scan is needed) */
+    FOR EACH member NO-LOCK TABLE-SCAN:
+    END.
+    ```
+
 ## Comments
 <a name="comm-header"></a><a name="4.1"></a>
   - [4.1](#comm-header) **Header comments**: Every class or external procedure has to have header aligned to ABLDocs format
