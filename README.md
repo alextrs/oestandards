@@ -229,7 +229,7 @@
   - [3.7](#use--index) **USE-INDEX**: Avoid using USE-INDEX statement. Use TABLE-SCAN if you need to read entire table.
     >Why? AVM automatically selects the most appropriate index
     
-    >Why not? If you need to force display order
+    >Why not? If you need to force display order (use on temp-table)
     
     ```openedge
     /* bad */
