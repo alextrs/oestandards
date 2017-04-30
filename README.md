@@ -9,6 +9,7 @@
 1. [Variables](#variables)
 1. [Naming Conventions](#naming-conventions)
 1. [Dynamic Objects](#dynamic-objects)
+1. [Other](#other)
 
 ## Objects
 
@@ -59,7 +60,7 @@
    ````
 
    ````openedge
-   /* bad (routine-level doesn't cover for loops) */
+   /* bad (routine-level doesn't cover FOR loops) */
    ROUTINE-LEVEL ON ERROR UNDO, THROW.
    RUN internalProcedure.
    
@@ -75,8 +76,9 @@
    ````
 
 <a name="no--error"></a><a name="2.2"></a>
-  - [2.3](#catch-block) **CATCH/THROW** Use CATCH/THROW instead of class error handling (NO-ERROR / ERROR-STATUS).
+  - [2.3](#catch-block) **CATCH/THROW** Use CATCH/THROW instead of classic error handling (NO-ERROR / ERROR-STATUS).
   > Why? One place to catch all errors. 
+  
   > Why? No need to handle errors every time they occur. No need to return error as output parameter and then handle them on every call.
 
   ````openedge
@@ -132,7 +134,7 @@
               WHERE member.id EQ 0.346544767)...
     ```
 <a name="exp-trans-scope"></a><a name="3.2"></a>
-  - [3.2](#exp--trans--scope) **Transaction Scoope**: Always explicitly define the transaction scope
+  - [3.2](#exp--trans--scope) **Transaction Scope**: Always explicitly define the transaction scope
 
     ```openedge
     /* bad */
@@ -160,7 +162,7 @@
 
 <a name="no--wait"></a><a name="3.3"></a>
   - [3.3](#no--wait) **No-wait**: When use NO-WAIT with NO-ERROR, always check whether record is LOCKED or not
-    > Why? When you use NO-WAIT with NO-ERROR and record is locked, it also is not available. Check for AVAIABLE only will most likely cause undesirable outcome.
+    > Why? When you use NO-WAIT with NO-ERROR and record is locked, it also is not available. Check for AVAILABLE only will most likely cause undesirable outcome.
 
     ```openedge
     /* bad */
@@ -180,6 +182,56 @@
 ## Comments
 
 ## Performance
+<a name="use--for--first"></a><a name="9.2"></a>
+  - [5.1](#use--for--first) **FOR FIRST/LAST**: Prefer to use FOR FIRST or FOR LAST instead of FIND FIRST/LAST
+    > Why? FIND FIRST/LAST doesn't use multiple indexes (also there are issues with Oracle dataservers)
+    
+    > Why not? If you need to update record and want to check whether record is locked or not.
+
+    ```openedge
+    /* we have two single field indexes (benefitCodeIdx and memberIdIdx) */
+    /* bad (only one index will be used) */
+    FIND FIRST memberBenefit NO-LOCK
+         WHERE memberBenefit.memberId    EQ 0.34521543
+           AND memberBenefir.benefidCode EQ 'BLCA' NO-ERROR.
+           
+    /* good (both indexes will be used) */
+    FOR FIRST memberBenefit NO-LOCK
+        WHERE memberBenefit.memberId    EQ 0.34521543
+          AND memberBenefir.benefidCode EQ 'BLCA':
+    END.
+    ```
+
+<a name="define--buffer"></a><a name="9.2"></a>
+  - [5.2](#define--buffer) **DEFINE BUFFER**: Define buffer for each DB buffer
+    > Why? To avoid side-effects from buffer that may be used in internal procedures / functions
+    > Why? To prevent locking issues which can happen when buffer is used in STATIC/SINGLETON methods or PERSISTENT procedures
+    
+    ```openedge
+    /* bad (if this find was called from static/singleton class - record will stay locked) */
+    METHOD PUBLIC CHARACTER getMember():
+      FIND FIRST member EXSLUSIVE-LOCK.
+      IF AVAILABLE member THEN
+        DO:
+          ASSIGN member.memberViewCount = member.memberViewCount - 1.
+          RETURN member.id.
+        END.
+    END.
+    
+    /* good (if this find was called from static/singleton class - record will lock will be released) */
+    METHOD PUBLIC CHARACTER getMember():
+      DEFINE BUFFER bMember FOR member.
+      FIND FIRST bMember EXSLUSIVE-LOCK.
+      IF AVAILABLE bMember THEN
+        DO:
+          ASSIGN bMember.memberViewCount = bMember.memberViewCount - 1.
+          RETURN bMember.id.
+        END.
+    END.
+    
+    ```
+
+
 
 ## Variables
 
@@ -348,5 +400,62 @@
       END.
     END.
     ```
+# Dynamic Objects    
+<a name="block--labels"></a><a name="9.1"></a>
+  - [9.1](#block--labels) **Block Labels**: Always use block labels
+    > Why? If you do not name a block, the AVM leaves the innermost iterating block that contains the LEAVE statement. The same is applicable to UNDO and NEXT statements. THis can cause unexpected behaviour
+
+    ```openedge
+    /* bad */
+    DO TRANSACTION:
+      FOR EACH memberBenefit:
+        ...
+        /* this will affect only current iteration */
+        UNDO, LEAVE.
+      END.
+    END.
     
+    /* good */
+    UpdateMembersBlk:
+    DO TRANSACTION:
+      FOR EACH memberBenefit:
+        ...
+        /* this will undo the entire transaction and leave DO block */
+        UNDO UpdateMembersBlk, LEAVE UpdateMembersBlk.
+      END.
+    END.
+    
+    ```
+    
+<a name="unnecessary-blocks"></a><a name="9.2"></a>
+  - [9.2](#unnecessary-blocks) **Unnecessary Blocks**: Don't create unnecessary DO blocks
+
+  ```openedge
+  /* bad */
+  IF NOT isValidMember(member.id) THEN
+    DO:
+      UNDO, THROW NEW Progress.Lang.AppError('Invalid Member', 1000).
+    END.
+  
+  /* good */
+  IF NOT isValidMember(member.id) THEN
+    UNDO, THROW NEW Progress.Lang.AppError('Invalid Member', 1000).
+  ```
+  
+<a name="comp--operators"></a><a name="9.3"></a>
+  - [9.1](#comp--operators) **Comparison operators**: Use comparison operators: EQ(=), LT(<), LE(<=), GT(>), GE(>=), NE(<>) 
+    > Why? It's easier to see/parse places whether we compare or assign values 
+
+    ```openedge
+    /* bad */
+    IF memberDOB > 01/01/1980 THEN
+    /* good */
+    IF memberDOB GT 01/01/1980 THEN
+    ```
+
+<a name=""></a><a name="9.3"></a>
+  - [9.1](#comp--operators) **Comparison operators**: Use comparison operators: EQ(=), LT(<), LE(<=), GT(>), GE(>=), NE(<>) 
+    > Why? It's easier to see/parse places whether we compare or assign values 
+
+
   
