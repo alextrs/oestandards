@@ -559,7 +559,7 @@
 
 <a name="if--parens"></a><a name="9.5"></a>
   - [9.5](#if--parens) **If Parentheses**: Always use parentheses when have AND and OR conditions
-    > Why? Even though precedence order is known some people forget it or get mixed.
+    > Why? Even though precedence order is known some people forget it or it get mixed.
 
     ```openedge
     IF (isValidMember OR showAll) AND (memberDOB < 01/01/1982 OR memberStatus = 'A') THEN
@@ -611,7 +611,7 @@
     ASSIGN cMemberName = 'John'
            dMemberDOB  = 01/01/1980
            cMemberAge  = ?.
-    /* bad - show = ? */
+    /* bad - show ? */
     MESSAGE cMemberName + STRING(dMemberDOB) + cMemberAge VIEW-AS ALERT-BOX.
     
     /* good - show 'John 01/01/1980 ?' */
