@@ -16,8 +16,8 @@
 
 ## Error Handling
 <a name="no--error"></a><a name="2.1"></a>
-  - [2.1](#no--error) **NO-ERROR**: Use NO-ERROR only when you expect an error to occur and if used handle error appropriately
-    > Why? NO-ERROR suppresses errors, which can cause database consistency, memory leaks, infinite loops and more...
+  - [2.1](#no--error) **NO-ERROR**: Use NO-ERROR only when you expect an error to occur, and if you use it, handle error appropriately
+    > Why? NO-ERROR suppresses errors, which can cause database inconsistency issues, memory leaks, infinite loops and more...
 
     ```openedge
     /* bad (error is suppressed, cMemberName is never assigned */
@@ -100,7 +100,7 @@
       END.
   END.
  
-  /* good (any application or system error will be catched by CATCH block) */
+  /* good (any application or system error will be caught by CATCH block) */
   RUN myCheck.
   
   CATCH eExc AS Progress.Lang.ProError:
@@ -118,7 +118,7 @@
 
 <a name="record--locking"></a><a name="3.1"></a>
   - [3.1](#record--locking) **Record Locking**: Always use either NO-LOCK or EXCLUSIVE-LOCK
-    > Why? If you don't specify locking mechanism SHARE-LOCK is used. NO-LOCK has better performance over SHARE-LOCK. Other users can't obtain EXCLUSIVE-LOCK on record that SHARE locked
+    > Why? If you don't specify locking mechanism, SHARE-LOCK is used. NO-LOCK has better performance over SHARE-LOCK. Other users can't obtain EXCLUSIVE-LOCK on record that is SHARE locked
 
     ```openedge
     /* bad */
@@ -163,7 +163,7 @@
 
 <a name="no--wait"></a><a name="3.3"></a>
   - [3.3](#no--wait) **No-wait**: When use NO-WAIT with NO-ERROR, always check whether record is LOCKED or not
-    > Why? When you use NO-WAIT with NO-ERROR and record is locked, it also is not available. Check for AVAILABLE only will most likely cause undesirable outcome.
+    > Why? When you use NO-WAIT with NO-ERROR and record is locked, it also is not available. Checking only for AVAILABLE, will most likely cause undesirable outcome.
 
     ```openedge
     /* bad */
@@ -176,7 +176,7 @@
     FIND FIRST member EXCLUSIVE-LOCK
          WHERE member.id EQ 0.346544767 NO-WAIT NO-ERROR.
     IF LOCKED member THEN
-      UNDO, THROW NEW Progress.Lang.AppError('Member record is current locked, please, try again later', 1000).
+      UNDO, THROW NEW Progress.Lang.AppError('Member record is currently locked, please, try again later', 1000).
     ELSE IF NOT AVAILABLE member THEN
       CREATE member.
     ```
@@ -194,7 +194,7 @@
     ```
 
 <a name="use--canfind"></a><a name="3.5"></a>
-  - [3.5](#use--canfind) **CAN-FIND**: Use CAN-FIND instead of FIND FIRST/LAST or FOR FIRST/LAST if all you need is to check that record exists
+  - [3.5](#use--canfind) **CAN-FIND**: Use CAN-FIND instead of FIND FIRST/LAST or FOR FIRST/LAST if all you need is only to check that record exists
     
     ```openedge
     /* bad */
@@ -229,7 +229,7 @@
   - [3.7](#use--index) **USE-INDEX**: Avoid using USE-INDEX statement. Use TABLE-SCAN if you need to read entire table.
     >Why? AVM automatically selects the most appropriate index
     
-    >Why not? If you need to force display order (use on temp-table)
+    >Why not? USE-INDEX can be used to force display order (applicable to temp-tables)
     
     ```openedge
     /* bad */
@@ -266,7 +266,7 @@
     ```openedge
     /*------------------------------------------------------------------------------
      Purpose: Find a member and return TRUE if this member is active
-     Notes: Doesn't take into account temporary member status
+     Notes: Doesn't take temporary member status into account
      @param ipdMemberId - member Id
      @return Is member active?
     ------------------------------------------------------------------------------*/
@@ -276,7 +276,7 @@
     PROCEDURE isMemberActive:
       /*------------------------------------------------------------------------------
        Purpose: Find a member and return TRUE if this member is active
-       Notes: Doesn't take into account temporary member status
+       Notes: Doesn't take temporary member status into account
        @param ipdMemberId - member Id
        @return Is member active?
       ------------------------------------------------------------------------------*/
@@ -288,7 +288,7 @@
     FUNCTION isMemberActive RETURNS LOGICAL (INPUT ipdMemberId AS DECIMAL):
       /*------------------------------------------------------------------------------
        Purpose: Find a member and return TRUE if this member is active
-       Notes: Doesn't take into account temporary member status
+       Notes: Doesn't take temporary member status into account
        @param ipdMemberId - member Id
        @return Is member active?
       ------------------------------------------------------------------------------*/
@@ -312,7 +312,7 @@
   - [5.1](#use--for--first) **FOR FIRST/LAST**: Prefer to use FOR FIRST or FOR LAST instead of FIND FIRST/LAST
     > Why? FIND FIRST/LAST doesn't use multiple indexes (also there are issues with Oracle dataservers)
     
-    > Why not? If you need to update record and want to check whether record is locked or not.
+    > Why not? Use if you need to update record and want to check whether record is locked or not.
 
     ```openedge
     /* we have two single field indexes (benefitCodeIdx and memberIdIdx) */
@@ -545,7 +545,7 @@
 
 <a name="comp--operators"></a><a name="9.2"></a>
   - [9.2](#comp--operators) **Comparison operators**: Use comparison operators: EQ(=), LT(<), LE(<=), GT(>), GE(>=), NE(<>) 
-    > Why? It's easier to see/parse places whether we compare or assign values 
+    > Why? It's easier to see/parse places where we compare or assign values 
 
     ```openedge
     /* bad */
@@ -613,7 +613,7 @@
 
 <a name="if--parens"></a><a name="9.5"></a>
   - [9.5](#if--parens) **If Parentheses**: Always use parentheses when have AND and OR conditions
-    > Why? Even though precedence order is known some people forget it or it get mixed.
+    > Why? Even though precedence order is known, some people forget it or it gets mixed.
 
     ```openedge
     IF (isValidMember OR showAll) AND (memberDOB < 01/01/1982 OR memberStatus = 'A') THEN
@@ -623,14 +623,14 @@
 # Other    
 <a name="block--labels"></a><a name="10.1"></a>
   - [10.1](#block--labels) **Block Labels**: Always use block labels
-    > Why? If you do not name a block, the AVM leaves the innermost iterating block that contains the LEAVE statement. The same is applicable to UNDO and NEXT statements. THis can cause unexpected behaviour
+    > Why? If you do not name a block, the AVM leaves the innermost iterating block that contains the LEAVE statement. The same is applicable to UNDO and NEXT statements. THis can cause unexpected behavior
 
     ```openedge
     /* bad */
     DO TRANSACTION:
       FOR EACH memberBenefit:
         ...
-        /* this will affect only current iteration */
+        /* this will affect current iteration only */
         UNDO, LEAVE.
       END.
     END.
@@ -659,7 +659,7 @@
     ```  
 <a name="use--substitute"></a><a name="10.4"></a>
   - [10.4](#use--substitute) **Use Substitute**: Use SUBSTITUTE to concatenate multiple values
-    > Why? If you try to concatenate values and one of the values is ? the entire result becomes ?, which is in most cases undesirable result.
+    > Why? If you try to concatenate values and one of the values is ? the entire result becomes ?, which is in most cases an undesirable result.
     
     ```openedge
     ASSIGN cMemberName = 'John'
