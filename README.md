@@ -115,7 +115,7 @@
   ````
 
 <a name="catch--many"></a><a name="2.4"></a>
-  - [2.4](#catch-many) **CATCH MANY** Use multiple catch block if you need to handle errors differently based on error type (only if you need to handle errors differently)
+  - [2.4](#catch-many) **CATCH MANY** Use multiple catch blocks if you need to handle errors differently based on error type (only if you need to handle errors differently)
   ````openedge
   /* bad (one catch - multiple error types) */
   ASSIGN iMemberId = INTEGER(ipcParsedMemberId).
