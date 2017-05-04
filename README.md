@@ -402,7 +402,7 @@
 
 
 ## Performance
-<a name="use--for--first"></a><a name="9.2"></a>
+<a name="use--for--first"></a><a name="5.1"></a>
   - [5.1](#use--for--first) **FOR FIRST/LAST**: Prefer to use FOR FIRST or FOR LAST instead of FIND FIRST/LAST
     > Why? FIND FIRST/LAST doesn't use multiple indexes (also there are issues with Oracle dataservers)
     
@@ -422,7 +422,7 @@
     END.
     ```
 
-<a name="define--buffer"></a><a name="9.2"></a>
+<a name="define--buffer"></a><a name="5.2"></a>
   - [5.2](#define--buffer) **DEFINE BUFFER**: Define buffer for each DB buffer
     > Why? To avoid side-effects from buffer that may be used in internal procedures / functions
     > Why? To prevent locking issues which can happen when buffer is used in STATIC/SINGLETON methods or PERSISTENT procedures
@@ -451,7 +451,19 @@
     
     ```
 
+<a name="by--reference"></a><a name="5.3"></a>
+  - [5.3](#by--reference) **BY-REFERENCE**: Always use BY-REFERENCE or BIND when passing temp-table or dataset to procedures/methods
+    > Why? By default AVM clones temp-table / dataset when it's passed as parameter (BY-VALUE)
+    > Why not? If you want to merge result manually or target procedure changes cursor positions in temp-table
 
+    ```openedge
+
+    /* bad */
+    RUN getMemberInfo.p ( OUTPUT DATASET dsMemberInfo ).
+
+    /* good */
+    RUN getMemberInfo.p ( OUTPUT DATASET dsMemberInfo BY-REFERENCE ).
+    ```
 
 ## Variables
 
@@ -466,14 +478,16 @@
     DEFINE TEMP-TABLE ttMember
       FIELD member_name AS CHARACTER.
     DEFINE VARIABLE cMemberName AS CHARACTER.
+    DEFINE INPUT PARAMETER ipcMemberName AS CHARACTER.
     DEFINE PROPERTY MemberName AS CHARACTER
       GET.
       SET.
-        
+
     /* good */
     DEFINE TEMP-TABLE ttMember NO-UNDO
       FIELD member_name AS CHARACTER.
     DEFINE VARIABLE cMemberName AS CHARACTER NO-UNDO.
+    DEFINE INPUT PARAMETER ipcMemberName AS CHARACTER NO-UNDO.
     DEFINE PROPERTY MemberName AS CHARACTER NO-UNDO
       GET.
       SET.
@@ -591,7 +605,7 @@
 
 ## Dynamic Objects
 <a name="delete--objects"></a><a name="8.1"></a>
-  - [8.1](#delete--objects) **Delete Dynamic Objects**: Always delete dynamic objects. Use FINNALY block to make sure object will be deleted.
+  - [8.1](#delete--objects) **Delete Dynamic Objects**: Always delete dynamic objects. Use FINALLY block to make sure object will be deleted.
     > Why? Progress garbage collector takes care of objects, but doesn't handle dynamic objects (BUFFERS, TABLES, QUERIES, PERSISTENT PROCEDURES and etc)
     
     ```openedge
@@ -650,7 +664,7 @@
     ```
 
 <a name="same--line-dot"></a><a name="9.3"></a>
-  - [9.3](#same--line-dot) **Dot Same Line** Put dot on the same line:  
+  - [9.3](#same--line-dot) **Dot/Colon Same Line** Put dot and colon on the same line:
 
     ```openedge
     /* bad */
@@ -662,11 +676,28 @@
     IF memberDOB > 01/01/1980 THEN
       RETURN memberDOB
     .
-        
+
+    /* bad */
+    FOR EACH memberInfo NO-LOCK
+      :
+
+    /* bad */
+    FOR EACH memberInfo NO-LOCK
+       WHERE memberInfo.memberId EQ 0.54764767
+       :
+
     /* good */
     IF memberDOB > 01/01/1980 THEN
       RETURN memberDOB.
-      
+
+    /* good */
+    FOR EACH memberInfo NO-LOCK:
+
+    /* good */
+    FOR EACH memberInfo NO-LOCK
+       WHERE memberInfo.memberId EQ 0.54764767:
+    ```
+
 <a name="blk--indentation"></a><a name="9.4"></a>
   - [9.4](#blk--indentation) **Block Indentation**: Use correct block indentation: DO statements on next line with 2 characters, otherwise 4 characters. __Make sure you configured Tab policy in Eclipse to use Spaces only (4 spaces per tab)__
 
@@ -719,12 +750,20 @@
     ```
 
 <a name="if--parens"></a><a name="9.6"></a>
-  - [9.6](#if--parens) **If Parentheses**: Always use parentheses when have AND and OR conditions
+  - [9.6](#if--parens) **If Parentheses**: Always use parentheses when have AND and OR conditions or use IF in ASSIGN statement
 
     > Why? Even though precedence order is known, some people forget it or it gets mixed.
 
     ```openedge
+
+    /* good */
     IF (isValidMember OR showAll) AND (memberDOB < 01/01/1982 OR memberStatus = 'A') THEN
+
+    /* bad (cause unexpected behaviour - last name will be only used if member doesn't have first name) */
+    ASSIGN cMemberFullName = IF cMemberFirstName GT '' THEN cMemberFirstName ELSE '' + ' ' + cMemberLastName.
+
+    /* good */
+    ASSIGN cMemberFullName = (IF cMemberFirstName GT '' THEN cMemberFirstName ELSE '') + ' ' + cMemberLastName.
       ...
 
 <a name="single-quotes"></a><a name="9.7"></a>
@@ -766,7 +805,7 @@
     ```
     
 <a name="assign--statement"></a><a name="10.3"></a>
-  - [10.2](#assign--statement) **Assign Statement**: Always use ASSIGN statement
+  - [10.2](#assign--statement) **Assign Statement**: Always use ASSIGN statement (even on single assignments)
     > Why? This method allows you to change several values with minimum I/O processing. Otherwise, the AVM re-indexes records at the end of each statement that changes the value of an index component.
     
     ```openedge
