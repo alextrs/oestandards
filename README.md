@@ -636,6 +636,49 @@
       END.
     END.
     ```
+
+<a name="mem--pointer"></a><a name="8.2"></a>
+  - [8.2](#mem--pointer) **MEMPTR**: Always deallocate memory alloced for MEMPTR.
+    > Why? Progress garbage collector doesn't take care of memory pointers.
+
+    > Why not? If you need to pass memory pointer to caller procedure as output parameter. Then make sure you clean up there.
+
+    ```openedge
+    /* bad (cause memory leak) */
+    PROCEDURE parseFile:
+      DEFINE VARIABLE mBlob AS MEMPTR NO-UNDO.
+      ...
+      COPY-LOB FILE 'path-to-file' TO mBlob.
+      ...
+    END.
+
+    /* good */
+    PROCEDURE parseFile:
+      DEFINE VARIABLE mBlob AS MEMPTR NO-UNDO.
+      ...
+      COPY-LOB FILE 'path-to-file' TO mBlob.
+      ...
+      FINALLY:
+        ASSIGN SET-SIZE(mBlob) = 0.
+      END.
+    END.
+
+    /* good */
+    RUN parseFile(OUTPUT mLoadedFile).
+
+    FINALLY:
+      ASSIGN SET-SIZE(mLoadedFile) = 0.
+    END.
+
+    PROCEDURE loadFile:
+      DEFINE OUTPUT PARAMETER mBlob AS MEMPTR NO-UNDO.
+      ...
+      COPY-LOB FILE 'path-to-file' TO mBlob.
+      ...
+    END.
+
+    ```
+
 # Code Styling
 <a name="unnecessary-blocks"></a><a name="9.1"></a>
   - [9.1](#unnecessary-blocks) **Unnecessary Blocks**: Don't create unnecessary DO blocks
