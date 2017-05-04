@@ -76,7 +76,7 @@
    END.
    ````
 
-<a name="no--error"></a><a name="2.2"></a>
+<a name="no--error"></a><a name="2.3"></a>
   - [2.3](#catch-block) **CATCH/THROW** Use CATCH/THROW instead of classic error handling (NO-ERROR / ERROR-STATUS).
   > Why? One place to catch all errors. 
   
@@ -113,7 +113,94 @@
     END.
   
   ````
-   
+
+<a name="catch--many"></a><a name="2.4"></a>
+  - [2.4](#catch-many) **CATCH MANY** Use multiple catch block if you need to handle errors differently based on error type (only if you need to handle errors differently)
+  ````openedge
+  /* bad (one catch - multiple error types) */
+  ASSIGN iMemberId = INTEGER(ipcParsedMemberId).
+  FIND FIRST member NO-LOCK
+       WHERE memberId = iMemberId NO-ERROR.
+  IF NOT AVAILABLE member THEN
+    UNDO, THROW NEW Progress.Lang.AppError('Invalid Member Id', 1000).
+  
+  CATCH eExc AS Progress.Lang.Error:
+    IF TYPE-OF(eExc, Progress.Lang.AppError) THEN
+      RETURN 'Invalid Application Error: ' + eExc:GetMessage(1).
+    ELSE
+      RETURN 'Invalid System Error: ' + eExc:GetMessage(1).
+  END.
+    
+  /* good */
+  ASSIGN iMemberId = INTEGER(ipcParsedMemberId).
+  FIND FIRST member NO-LOCK
+       WHERE memberId = iMemberId NO-ERROR.
+  IF NOT AVAILABLE member THEN
+    UNDO, THROW NEW Progress.Lang.AppError('Invalid Member Id', 1000).
+  
+  CATCH eExcApp AS Progress.Lang.AppError:
+    RETURN 'Invalid Application Error: ' + eExcApp:GetMessage(1).
+  END.
+  
+  CATCH eExcSys AS Progress.Lang.Error:
+    RETURN 'Invalid System Error: ' + eExcSys:GetMessage(1).
+  END.
+  ````  
+
+  ````openedge
+  /* bad (multiple catch blocks - the same error handling) */
+  FIND FIRST member NO-LOCK
+       WHERE memberId = 123 NO-ERROR.
+  IF NOT AVAILABLE member THEN
+    UNDO, THROW NEW Progress.Lang.AppError('Invalid Member Id', 1000).
+    
+  CATCH eExc AS Progress.Lang.AppError:
+    RETURN 'Error: ' + eExc:GetMessage(1).
+  END CATCH.
+    
+  CATCH eExc AS Progress.Lang.Error:
+    RETURN 'Error: ' + eExc:GetMessage(1).
+  END CATCH.
+    
+  /* good */
+  FIND FIRST member NO-LOCK
+       WHERE memberId = 123 NO-ERROR.
+  IF NOT AVAILABLE member THEN
+    UNDO, THROW NEW Progress.Lang.AppError('Invalid Member Id', 1000).
+    
+  CATCH eExc AS Progress.Lang.Error:
+    RETURN 'Error: ' + eExc:GetMessage(1).
+  END CATCH.
+  ````
+
+<a name="no--error"></a><a name="2.5"></a>
+  - [2.5](#rethrow) **RE-THROW** Re-throw errors manually only if you need to do extra processing (like logging, or converting general error type to more specific) before error is thrown to upper level
+  
+    > Why? Every procedure/class is supposed to change the default ON ERROR directive, forcing AVM to throw errors to upper level automatically 
+    ````openedge
+    /* bad */
+    ASSIGN iMemberId = INTEGER('ABC_123').
+        
+    CATCH eExc AS Progress.Lang.ProError:
+      UNDO, THROW eExc.
+    END CATCH.
+        
+    /* good (convert General error into ParseError) */
+    ASSIGN iMemberId = INTEGER('ABC_123').
+        
+    CATCH eExc AS Progress.Lang.ProError:
+      UNDO, THROW NEW Mhp.Errors.ParseError(eExc:GetMessage(1), eExc:GetNumber(1)).
+    END CATCH.
+        
+    /* good (write log message and throw error - use only at top most level) */
+    ASSIGN iMemberId = INTEGER('ABC_123').
+        
+    CATCH eExc AS Progress.Lang.ProError:
+      logger:error(eExc).
+      UNDO, THROW NEW Mhp.Errors.ParseError(eExc:GetMessage(1), eExc:GetNumber(1)).
+    END CATCH.
+    ````
+
 ## Data Access
 
 <a name="record--locking"></a><a name="3.1"></a>
@@ -196,6 +283,8 @@
 <a name="use--canfind"></a><a name="3.5"></a>
   - [3.5](#use--canfind) **CAN-FIND**: Use CAN-FIND instead of FIND FIRST/LAST or FOR FIRST/LAST if all you need is only to check that record exists
     
+    > Why not? If multiple indexes needed to effectively find a record (use FOR FIRST/LAST in this case).
+    
     ```openedge
     /* bad */
     FIND FIRST member NO-LOCK
@@ -244,6 +333,11 @@
         
     /* good (if the whole table scan is needed) */
     FOR EACH member NO-LOCK TABLE-SCAN:
+    END.
+        
+    /* good (AVM will use index, if available, to prepare sorted result) */
+    /* IMPORTANT: Be careful when combining WHERE and BY statement (use XREF to see used index) */
+    FOR EACH member NO-LOCK BY member.firstName:
     END.
     ```
 
