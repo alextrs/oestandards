@@ -705,14 +705,38 @@
       
     ```
 
-<a name="if--parens"></a><a name="9.5"></a>
-  - [9.5](#if--parens) **If Parentheses**: Always use parentheses when have AND and OR conditions
+<a name="where--position"></a><a name="9.5"></a>
+  - [9.5](#where--position) **WHERE NEW LINE**: Always put WHERE and AND/OR on next line.
+
+    ```openedge
+    /* bad */
+    FOR EACH memberInfo FIELDS(birthDate gender) NO-LOCK WHERE memberInfo.birthDate GT 01/01/1920 AND memberInfo.gender EQ 'M':
+    
+    /* good */
+    FOR EACH memberInfo FIELDS(birthDate gender) NO-LOCK
+       WHERE memberInfo.birthDate GT 01/01/1920
+         AND memberInfo.gender    EQ 'M'
+    ```
+
+<a name="if--parens"></a><a name="9.6"></a>
+  - [9.6](#if--parens) **If Parentheses**: Always use parentheses when have AND and OR conditions
+
     > Why? Even though precedence order is known, some people forget it or it gets mixed.
 
     ```openedge
     IF (isValidMember OR showAll) AND (memberDOB < 01/01/1982 OR memberStatus = 'A') THEN
       ...
 
+<a name="single-quotes"></a><a name="9.7"></a>
+  - [9.7](#single-quotes) **Single Quotes**: Use single quotation marks when working with string constants
+
+    ```openedge
+    /* bad */
+    ASSIGN cMemberInfo = "Some Info".
+        
+    /* good */
+    ASSIGN cMemberInfo = 'Some Info'.
+    ```
 
 # Other    
 <a name="block--labels"></a><a name="10.1"></a>
