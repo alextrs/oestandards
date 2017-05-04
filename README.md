@@ -454,6 +454,7 @@
 <a name="by--reference"></a><a name="5.3"></a>
   - [5.3](#by--reference) **BY-REFERENCE**: Always use BY-REFERENCE or BIND when passing temp-table or dataset to procedures/methods
     > Why? By default AVM clones temp-table / dataset when it's passed as parameter (BY-VALUE)
+
     > Why not? If you want to merge result manually or target procedure changes cursor positions in temp-table
 
     ```openedge
