@@ -154,12 +154,12 @@
   IF NOT AVAILABLE member THEN
     UNDO, THROW NEW Progress.Lang.AppError('Invalid Member Id', 1000).
     
-  CATCH eExc AS Progress.Lang.AppError:
-    RETURN 'Error: ' + eExc:GetMessage(1).
+  CATCH eExcApp AS Progress.Lang.AppError:
+    RETURN 'Error: ' + eExcApp:GetMessage(1).
   END CATCH.
     
-  CATCH eExc AS Progress.Lang.Error:
-    RETURN 'Error: ' + eExc:GetMessage(1).
+  CATCH eExcSys AS Progress.Lang.Error:
+    RETURN 'Error: ' + eExcSys:GetMessage(1).
   END CATCH.
     
   /* good */
