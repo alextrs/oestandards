@@ -638,10 +638,10 @@
     ```
 
 <a name="mem--pointer"></a><a name="8.2"></a>
-  - [8.2](#mem--pointer) **MEMPTR**: Always deallocate memory alloced for MEMPTR.
+  - [8.2](#mem--pointer) **MEMPTR**: Always deallocate memory allocated for MEMPTR.
     > Why? Progress garbage collector doesn't take care of memory pointers.
 
-    > Why not? If you need to pass memory pointer to caller procedure as output parameter. Then make sure you clean up there.
+    > Why not? If you need to pass memory pointer to caller procedure/method as output parameter. Then make sure you clean up there.
 
     ```openedge
     /* bad (cause memory leak) */
@@ -671,9 +671,9 @@
     END.
 
     PROCEDURE loadFile:
-      DEFINE OUTPUT PARAMETER mBlob AS MEMPTR NO-UNDO.
+      DEFINE OUTPUT PARAMETER opmBlob AS MEMPTR NO-UNDO.
       ...
-      COPY-LOB FILE 'path-to-file' TO mBlob.
+      COPY-LOB FILE 'path-to-file' TO opmBlob.
       ...
     END.
 
