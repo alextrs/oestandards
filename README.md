@@ -32,9 +32,9 @@
       MESSAGE "Error:" + eExc:GetMessage(1).
     END.
 
-    /* good (ver 2) - classic error handling */
-    ASSIGN iMemberNumber = INTEGER("ABC")
-           cMemberName   = 'ABC' NO-ERROR.
+    /* good (ver 2) - classic error handling (split safe assignment from unsafe) */
+    ASSIGN cMemberName   = 'ABC'.
+    ASSIGN iMemberNumber = INTEGER("ABC") NO-ERROR.
     IF ERROR-STATUS:ERROR THEN
       DO:
         /* handle error here */
@@ -42,10 +42,11 @@
     ```
 
 <a name="no--error"></a><a name="2.2"></a>
-  - [2.2](#routine-level) **BLOCK-LEVEL THROW** Always use BLOCK-LEVEL ON ERROR UNDO, THROW statement 
+  - [2.2](#routine-level) **BLOCK-LEVEL THROW** Always use BLOCK-LEVEL ON ERROR UNDO, THROW statement
    > Why? It changes the default ON ERROR directive to UNDO, THROW for all blocks (from default UNDO, LEAVE or UNDO, RETRY)
    
-   > Note: Use this parameter in legacy systems only. For new development use _-undothrow 2_ to set BLOCK-LEVEL ON ERROR UNDO, THROW everywhere 
+   > Note: Use this parameter in legacy systems only. For new development use _-undothrow 2_ to set BLOCK-LEVEL ON ERROR UNDO, THROW everywhere
+   > Note: Use in new modules or when you confident that the change on existing code is not going to break error handling
 
    ````openedge
    /* bad (default ON ERROR directive used) */
@@ -70,8 +71,9 @@
    END.
    
    PROCEDURE internalProcedure:
-     FOR EACH memberRecord:
-       UNDO, THROW NEW Progress.Lang.AppError('Error String', 1000).
+     FOR EACH bMemberRecord NO-LOCK:
+         IF bMemberRecord.memberDOB LT 01/01/1910 THEN
+             UNDO, THROW NEW Progress.Lang.AppError('Found member with invalid DOB', 1000).
      END.
    END.
    ````
@@ -204,7 +206,7 @@
 ## Data Access
 
 <a name="record--locking"></a><a name="3.1"></a>
-  - [3.1](#record--locking) **Record Locking**: Always use either NO-LOCK or EXCLUSIVE-LOCK
+  - [3.1](#record--locking) **Never use SHARE-LOCK**: Always use either NO-LOCK or EXCLUSIVE-LOCK
     > Why? If you don't specify locking mechanism, SHARE-LOCK is used. NO-LOCK has better performance over SHARE-LOCK. Other users can't obtain EXCLUSIVE-LOCK on record that is SHARE locked
 
     ```openedge
@@ -222,7 +224,7 @@
               WHERE member.id EQ 0.346544767)...
     ```
 <a name="exp-trans-scope"></a><a name="3.2"></a>
-  - [3.2](#exp--trans--scope) **Transaction Scope**: Always explicitly define the transaction scope
+  - [3.2](#exp--trans--scope) **Transaction Scope**: Always explicitly define the transaction scope and strong scope applicable buffer
 
     ```openedge
     /* bad */
@@ -235,16 +237,18 @@
     END.
 
     /* good (provider should be updated separately from members) */
-    DO TRANSACTION:
+    DO FOR provider TRANSACTION:
       FIND FIRST provider EXCLUSIVE-LOCK
            WHERE provider.id EQ 0.657532547 NO-ERROR.
       IF AVAILABLE provider THEN
         ASSIGN provider.name = 'New Provider':U.
     END.
     /* ... some code... */
-    FOR EACH member EXCLUSIVE-LOCK
-       WHERE member.category EQ 0.17567323 TRANSACTION:
-      ASSIGN member.memberName = 'New member name':U.
+    FOR EACH bMember NO-LOCK
+       WHERE bMember.category EQ 0.17567323 TRANSACTION:
+      FIND FIRST bMember2 EXCLUSIVE-LOCK
+           WHERE ROWID(bMember2) EQ ROWID(bMember).
+      ASSIGN bMember2.memberName = 'New member name':U.
     END.
     ```
 
@@ -319,6 +323,8 @@
     >Why? AVM automatically selects the most appropriate index
     
     >Why not? USE-INDEX can be used to force display order (applicable to temp-tables)
+
+    >Why not? In case you need to process records in batches and index selection can't be consistently enforced by WHERE clause (REPOSITION TO ROW-ID -> NEXT/PREV)
     
     ```openedge
     /* bad */
@@ -344,6 +350,9 @@
 ## Comments
 <a name="comm-header"></a><a name="4.1"></a>
   - [4.1](#comm-header) **Header comments**: Every class or external procedure has to have header aligned to ABLDocs format
+
+    > Note: Put note in header if procedure/class is used by external system/service (exposed as REST service)
+
     ```openedge
     /*------------------------------------------------------------------------
         File        : getMinUserInfo.p
@@ -353,6 +362,7 @@
         Author(s)   : Aliaksandr Tarasevich
         Created     : <pre>Tue Nov 19 21:16:10 CET</pre>
         Notes       : Use to only retrieve minimal user information, otherwise, use getAllUserInfo.p
+                      Used by external systems (REST/SOAP)
       ----------------------------------------------------------------------*/
     ```
 <a name="comm--proc--func"></a><a name="4.2"></a>
@@ -400,6 +410,28 @@
       PROTECTED SET.
     ```
 
+<a name="no--commented--code"></a><a name="4.4"></a>
+  - [4.4](#no--commented--code) **No commented code**: Don't leave unused code commented - delete.
+
+    > Why? It makes code less readable and causes unused code to be picked up when developer tries to search code snip in codebase
+
+    > Why? Developers must use version control system to keep track of changes
+
+    > Note: If you commented out procedure/function/method calls, fine whether commented procedure/function/method is used in other places, if not - delete it
+
+    ```openedge
+    /* bad */
+
+    /* removed as part of fix for PL-43516674 */
+    /* IF member.memberId EQ dInvMemberId THEN
+         DO:
+           ...
+         END. */
+
+    /* temporary remove as part of N project */
+    /* RUN makeMemberAsInvalid. */
+    ```
+
 
 ## Performance
 <a name="use--for--first"></a><a name="5.1"></a>
@@ -426,7 +458,9 @@
   - [5.2](#define--buffer) **DEFINE BUFFER**: Define buffer for each DB buffer
     > Why? To avoid side-effects from buffer that may be used in internal procedures / functions
     > Why? To prevent locking issues which can happen when buffer is used in STATIC/SINGLETON methods or PERSISTENT procedures
-    
+
+    > Note: Define buffer as close as possible to a place it's going to be use (internal procedure or method). Try to avoid using globally defined buffers
+
     ```openedge
     /* bad (if this find was called from static/singleton class - record will stay locked) */
     METHOD PUBLIC CHARACTER getMember():
@@ -577,15 +611,45 @@
 	 DEFINE VARIABLE dMemberId     AS DECIMAL      NO-UNDO.
 	 DEFINE VARIABLE hMemberReq    AS HANDLE       NO-UNDO.
 	 DEFINE VARIABLE dtStartDate   AS DATE         NO-UNDO.
-	 DEFINE VARIABLE dtzEndDate    AS DATETIME-TZ  NO-UNDO.
+	 DEFINE VARIABLE tEndDate      AS DATETIME     NO-UNDO.
+	 DEFINE VARIABLE tzEndDate     AS DATETIME-TZ  NO-UNDO.
 	 DEFINE VARIABLE mMemberDoc    AS MEMPTR       NO-UNDO.
 	 DEFINE VARIABLE rMemberKey    AS RAW          NO-UNDO.
 	 DEFINE VARIABLE oMemberInfo   AS member.info  NO-UNDO.
 	 DEFINE VARIABLE lcMemberNode  AS LONGCHAR     NO-UNDO.
 	 ```
 
-<a name="variable--meaning"></a><a name="7.4"></a>
-  - [7.4](#variable--meaning) **Meaningful Names**: Define variables with meaningful names (applicable to context), but avoid extra long names (use abbreviations when possible)
+<a name="input--prefix"></a><a name="7.4"></a>
+  - [7.4](#input--prefix) **Prefix input/output variable**: Prefix parameter variable with input/output type (ip - INPUT, op - OUTPUT, oip - INPUT-OUTPUT)
+
+    ```openedge
+	 DEFINE INPUT  PARAMETER ipcMemberName      AS CHARACTER    NO-UNDO.
+	 DEFINE OUTPUT PARAMETER opiMemberNumber    AS INTEGER      NO-UNDO.
+	 DEFINE INPUT-OUTPUT PARAMETER oipdMemberId AS DECIMAL      NO-UNDO.
+
+	 METHOD PUBLIC LOGICAL checkMemberReq (INPUT         iphMemberReq  AS HANDLE).
+	 METHOD PUBLIC LOGICAL checkMemberReq (OUTPUT        opdtStartDate AS DATE).
+	 METHOD PUBLIC LOGICAL checkMemberReq (INPUT-OUTPUT  ioptEndDate   AS DATETIME).
+	 ```
+
+<a name="input--prefix"></a><a name="7.5"></a>
+  - [7.5](#input--prefix) **Prefix temp-table/prodataset**: Put prefix on temp-tables (tt, bi) and datasets (ds)
+
+    ```openedge
+    /* bad */
+    DEFINE TEMP-TABLE tbMember...
+    DEFINE TEMP-TABLE ttblMember...
+    DEFINE TEMP-TABLE ttMember NO-UNDO BEFORE-TABLE bttMember...
+    DEFINE DATASET pdsMember...
+    DEFINE DATASET pMember...
+
+    /* good */
+    DEFINE TEMP-TABLE ttMember NO-UNDO BEFORE-TABLE bittMember...
+    DEFINE DATASET dsMember...
+    ```
+
+<a name="variable--meaning"></a><a name="7.6"></a>
+  - [7.6](#variable--meaning) **Meaningful Names**: Define variables with meaningful names (applicable to context), but avoid extra long names (use abbreviations when possible)
   	
   	```openedge
 	/* bad */
@@ -819,6 +883,43 @@
         
     /* good */
     ASSIGN cMemberInfo = 'Some Info'.
+    ```
+
+<a name="end--with-type"></a><a name="9.8"></a>
+  - [9.8](#end--with-type) **End with type**: Always specify what is end used for (PROCEDURE, CONSTRUCTOR, DESTRUCTOR, METHOD or FUNCTION)
+
+    ```openedge
+    /* bad */
+    PROCEDURE checkMember:
+    END.
+
+    FUNCTION checkMember RETURNS LOGICAL():
+    END.
+
+    CONSTRUCTOR Member:
+    END.
+
+    DESTRUCTOR Member:
+    END.
+
+    METHOD PUBLIC LOGICAL checkMember():
+    END.
+
+    /* good */
+    PROCEDURE checkMember:
+    END PROCEDURE.
+
+    FUNCTION checkMember RETURNS LOGICAL():
+    END FUNCTION.
+
+    CONSTRUCTOR Member:
+    END CONSTRUCTOR.
+
+    DESTRUCTOR Member:
+    END DESTRUCTOR.
+
+    METHOD PUBLIC LOGICAL checkMember():
+    END METHOD.
     ```
 
 # Other    
