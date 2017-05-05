@@ -49,7 +49,7 @@
 
    > Note: Use this parameter in legacy systems only. For new development use _-undothrow 2_ to set BLOCK-LEVEL ON ERROR UNDO, THROW everywhere
 
-   > Note: Use in new modules or when you confident that the change on existing code is not going to break error handling
+   > Note: Use in new modules or when you confident that the change in existing code is not going to break error handling
 
    ```openedge
    /* bad (default ON ERROR directive used) */
@@ -429,7 +429,7 @@
 
     > Why? Developers must use version control system to keep track of changes
 
-    > Note: If you commented out procedure/function/method calls, fine whether commented procedure/function/method is used in other places, if not - delete it
+    > Note: If you commented out procedure / function / method calls, find whether commented procedure / function / method is used in other places, if not - delete it
 
     ```openedge
     /* bad */
