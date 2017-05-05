@@ -17,6 +17,7 @@
 ## Error Handling
 <a name="no--error"></a><a name="2.1"></a>
   - [2.1](#no--error) **NO-ERROR**: Use NO-ERROR only when you expect an error to occur, and if you use it, handle error appropriately
+    
     > Why? NO-ERROR suppresses errors, which can cause database inconsistency issues, memory leaks, infinite loops and more...
 
     ```openedge
@@ -43,11 +44,12 @@
 
 <a name="no--error"></a><a name="2.2"></a>
   - [2.2](#routine-level) **BLOCK-LEVEL THROW** Always use BLOCK-LEVEL ON ERROR UNDO, THROW statement 
+   
    > Why? It changes the default ON ERROR directive to UNDO, THROW for all blocks (from default UNDO, LEAVE or UNDO, RETRY)
    
    > Note: Use this parameter in legacy systems only. For new development use _-undothrow 2_ to set BLOCK-LEVEL ON ERROR UNDO, THROW everywhere 
 
-   ````openedge
+   ```openedge
    /* bad (default ON ERROR directive used) */
    RUN internalProcedure.
    
@@ -58,9 +60,9 @@
    PROCEDURE internalProcedure:
      UNDO, THROW NEW Progress.Lang.AppError('Error String', 1000).
    END.
-   ````
+   ```
 
-   ````openedge
+   ```openedge
    /* bad (routine-level doesn't cover FOR loops) */
    ROUTINE-LEVEL ON ERROR UNDO, THROW.
    RUN internalProcedure.
@@ -74,15 +76,16 @@
        UNDO, THROW NEW Progress.Lang.AppError('Error String', 1000).
      END.
    END.
-   ````
+   ```
 
 <a name="no--error"></a><a name="2.3"></a>
   - [2.3](#catch-block) **CATCH/THROW** Use CATCH/THROW instead of classic error handling (NO-ERROR / ERROR-STATUS).
+  
   > Why? One place to catch all errors. 
   
   > Why? No need to handle errors every time they occur. No need to return error as output parameter and then handle them on every call.
 
-  ````openedge
+  ```openedge
   /* bad */
   RUN myCheck (OUTPUT cErrorMessage) NO-ERROR.
   IF ERROR-STATUS:ERROR THEN
@@ -112,11 +115,12 @@
       UNDO, THROW NEW Progress.Lang.AppError('Can not find member, try again', 1000).
     END.
   
-  ````
+  ```
 
 <a name="catch--many"></a><a name="2.4"></a>
   - [2.4](#catch-many) **CATCH MANY** Use multiple catch blocks if you need to handle errors differently based on error type (only if you need to handle errors differently)
-  ````openedge
+  
+  ```openedge
   /* bad (one catch - multiple error types) */
   ASSIGN iMemberId = INTEGER(ipcParsedMemberId).
   FIND FIRST member NO-LOCK
@@ -145,9 +149,9 @@
   CATCH eExcSys AS Progress.Lang.Error:
     RETURN 'Invalid System Error: ' + eExcSys:GetMessage(1).
   END.
-  ````  
+  ```  
 
-  ````openedge
+  ```openedge
   /* bad (multiple catch blocks - the same error handling) */
   FIND FIRST member NO-LOCK
        WHERE memberId = 123 NO-ERROR.
@@ -171,13 +175,14 @@
   CATCH eExc AS Progress.Lang.Error:
     RETURN 'Error: ' + eExc:GetMessage(1).
   END CATCH.
-  ````
+  ```
 
 <a name="no--error"></a><a name="2.5"></a>
   - [2.5](#rethrow) **RE-THROW** Re-throw errors manually only if you need to do extra processing (like logging, or converting general error type to more specific) before error is thrown to upper level
   
-    > Why? Every procedure/class is supposed to change the default ON ERROR directive, forcing AVM to throw errors to upper level automatically 
-    ````openedge
+    > Why? Every procedure/class is supposed to change the default ON ERROR directive, forcing AVM to throw errors to upper level automatically
+     
+    ```openedge
     /* bad */
     ASSIGN iMemberId = INTEGER('ABC_123').
         
@@ -199,12 +204,13 @@
       logger:error(eExc).
       UNDO, THROW NEW Mhp.Errors.ParseError(eExc:GetMessage(1), eExc:GetNumber(1)).
     END CATCH.
-    ````
+    ```
 
 ## Data Access
 
 <a name="record--locking"></a><a name="3.1"></a>
   - [3.1](#record--locking) **Record Locking**: Always use either NO-LOCK or EXCLUSIVE-LOCK
+  
     > Why? If you don't specify locking mechanism, SHARE-LOCK is used. NO-LOCK has better performance over SHARE-LOCK. Other users can't obtain EXCLUSIVE-LOCK on record that is SHARE locked
 
     ```openedge
@@ -250,6 +256,7 @@
 
 <a name="no--wait"></a><a name="3.3"></a>
   - [3.3](#no--wait) **No-wait**: When use NO-WAIT with NO-ERROR, always check whether record is LOCKED or not
+  
     > Why? When you use NO-WAIT with NO-ERROR and record is locked, it also is not available. Checking only for AVAILABLE, will most likely cause undesirable outcome.
 
     ```openedge
@@ -270,6 +277,7 @@
 
 <a name="no--recid"></a><a name="3.4"></a>
   - [3.4](#no--recid) **No RECID**: Don't use RECID, use ROWID. Don't store ROWID or RECID in database, use surrogate keys
+  
     > Why ROWID? RECID supported only for backward compatibility
     
     > Why don't store? ROWID and RECID change after dump and load process. The same ROWID/RECID can be found in the same table (when multi-tenancy or data-partitioning is used)
@@ -316,6 +324,7 @@
 
 <a name="use--index"></a><a name="3.7"></a>
   - [3.7](#use--index) **USE-INDEX**: Avoid using USE-INDEX statement. Use TABLE-SCAN if you need to read entire table.
+    
     >Why? AVM automatically selects the most appropriate index
     
     >Why not? USE-INDEX can be used to force display order (applicable to temp-tables)
@@ -357,6 +366,7 @@
     ```
 <a name="comm--proc--func"></a><a name="4.2"></a>
   - [4.2](#comm--proc--func) **Internal comments**: Use comments in internal procedures, functions, methods aligned to ABLDocs format
+    
     ```openedge
     /*------------------------------------------------------------------------------
      Purpose: Find a member and return TRUE if this member is active
@@ -391,6 +401,7 @@
 
 <a name="class--props"></a><a name="4.3"></a>
   - [4.3](#class--props) **Class Properties**: Use comments for properties aligned to ABLDocs format
+    
     ```openedge
     /*
        Indicates whether document was previously loaded or not
@@ -404,6 +415,7 @@
 ## Performance
 <a name="use--for--first"></a><a name="5.1"></a>
   - [5.1](#use--for--first) **FOR FIRST/LAST**: Prefer to use FOR FIRST or FOR LAST instead of FIND FIRST/LAST
+    
     > Why? FIND FIRST/LAST doesn't use multiple indexes (also there are issues with Oracle dataservers)
     
     > Why not? Use if you need to update record and want to check whether record is locked or not.
@@ -424,7 +436,9 @@
 
 <a name="define--buffer"></a><a name="5.2"></a>
   - [5.2](#define--buffer) **DEFINE BUFFER**: Define buffer for each DB buffer
+  
     > Why? To avoid side-effects from buffer that may be used in internal procedures / functions
+    
     > Why? To prevent locking issues which can happen when buffer is used in STATIC/SINGLETON methods or PERSISTENT procedures
     
     ```openedge
@@ -453,6 +467,7 @@
 
 <a name="by--reference"></a><a name="5.3"></a>
   - [5.3](#by--reference) **BY-REFERENCE**: Always use BY-REFERENCE or BIND when passing temp-table or dataset to procedures/methods
+    
     > Why? By default AVM clones temp-table / dataset when it's passed as parameter (BY-VALUE)
 
     > Why not? If you want to merge result manually or target procedure changes cursor positions in temp-table
@@ -470,6 +485,7 @@
 
 <a name="record--locking"></a><a name="6.1"></a>
   - [6.1](#no--undo) **No-undo**: Always use NO-UNDO on all temp-tables and variables
+    
     > Why? When you define variables, the AVM allocates what amounts to a record buffer for them, where each variable becomes a field in the buffer. There are in fact two such buffers, one for variables whose values can be undone when a transaction is rolled back and one for those that can't. There is extra overhead associated with keeping track of the before-image for each variable that can be undone, and this behavior is rarely needed.
 
     > Why not? If you need to be able to revert value of variable on UNDO
@@ -607,6 +623,7 @@
 ## Dynamic Objects
 <a name="delete--objects"></a><a name="8.1"></a>
   - [8.1](#delete--objects) **Delete Dynamic Objects**: Always delete dynamic objects. Use FINALLY block to make sure object will be deleted.
+    
     > Why? Progress garbage collector takes care of objects, but doesn't handle dynamic objects (BUFFERS, TABLES, QUERIES, PERSISTENT PROCEDURES and etc)
     
     ```openedge
@@ -639,6 +656,7 @@
 
 <a name="mem--pointer"></a><a name="8.2"></a>
   - [8.2](#mem--pointer) **MEMPTR**: Always deallocate memory allocated for MEMPTR.
+    
     > Why? Progress garbage collector doesn't take care of memory pointers.
 
     > Why not? If you need to pass memory pointer to caller procedure/method as output parameter. Then make sure you clean up there.
@@ -697,6 +715,7 @@
 
 <a name="comp--operators"></a><a name="9.2"></a>
   - [9.2](#comp--operators) **Comparison operators**: Use comparison operators: EQ(=), LT(<), LE(<=), GT(>), GE(>=), NE(<>) 
+    
     > Why? It's easier to see/parse places where we compare or assign values 
 
     ```openedge
@@ -793,8 +812,40 @@
          AND memberInfo.gender    EQ 'M'
     ```
 
-<a name="if--parens"></a><a name="9.6"></a>
-  - [9.6](#if--parens) **If Parentheses**: Always use parentheses when have AND and OR conditions or use IF in ASSIGN statement
+<a name="method--params"></a><a name="9.6"></a>
+  - [9.6](#method--params) **Parameters**: Put first method/function/procedure parameter on the same line. If method has more than 3 parameters, put every parameter on new line (aligned to first parameter)
+
+    ```openedge
+    /* bad */
+    RUN loadFile (
+        cFileName, 
+        cFileType, OUTPUT mFileBody).
+        
+    /* bad */
+    RUN loadFile (
+        cFileName, cFileType, OUTPUT mFileBody
+        ).
+        
+    /* bad */
+    ASSIGN mFileBody = 
+        loadFile (cFileName, cFileType, OUTPUT mFileBody).
+        
+    /* good */
+    RUN loadFile (cFileName, cFileType, OUTPUT mFileBody).
+        
+    /* good */
+    RUN loadFile (INPUT cFileName, 
+                  INPUT cFileType, 
+                  INPUT cLoadCodePage,
+                  OUTPUT mFileBody).
+        
+    /* good */
+    ASSIGN mFileBody = loadFile (cFileName, cFileType).
+
+    ```
+
+<a name="if--parens"></a><a name="9.7"></a>
+  - [9.7](#if--parens) **If Parentheses**: Always use parentheses when have AND and OR conditions or use IF in ASSIGN statement
 
     > Why? Even though precedence order is known, some people forget it or it gets mixed.
 
@@ -802,16 +853,17 @@
 
     /* good */
     IF (isValidMember OR showAll) AND (memberDOB < 01/01/1982 OR memberStatus = 'A') THEN
+      ...
 
     /* bad (cause unexpected behaviour - last name will be only used if member doesn't have first name) */
     ASSIGN cMemberFullName = IF cMemberFirstName GT '' THEN cMemberFirstName ELSE '' + ' ' + cMemberLastName.
 
     /* good */
     ASSIGN cMemberFullName = (IF cMemberFirstName GT '' THEN cMemberFirstName ELSE '') + ' ' + cMemberLastName.
-      ...
+    ```
 
-<a name="single-quotes"></a><a name="9.7"></a>
-  - [9.7](#single-quotes) **Single Quotes**: Use single quotation marks when working with string constants
+<a name="single-quotes"></a><a name="9.8"></a>
+  - [9.8](#single-quotes) **Single Quotes**: Use single quotation marks when working with string constants
 
     ```openedge
     /* bad */
@@ -821,9 +873,26 @@
     ASSIGN cMemberInfo = 'Some Info'.
     ```
 
+<a name="methods--out--return"></a><a name="9.9"></a>
+  - [9.9](#methods--out--return) **Consistent method/function return**: Either return value or use output parameters (don't mix) when working with methods / functions
+
+    ```openedge
+    /* bad */
+    ASSIGN lValidMember = oMemberInfo:getMemberInfo(iMemberId, OUTPUT cMemberName, OUTPUT dMemberDOB).
+        
+    /* good */
+    oMemberInfo:getMemberInfo(iMemberId, OUTPUT lValidMember, OUTPUT cMemberName, OUTPUT dMemberDOB).
+    
+    /* good (split into couple calls) */
+    IF oMemberInfo:isValidMember(iMemberId) THEN
+      oMemberInfo:getMemberInfo(iMemberId, OUTPUT cMemberName, OUTPUT dMemberDOB).
+    
+    ```
+
 # Other    
 <a name="block--labels"></a><a name="10.1"></a>
   - [10.1](#block--labels) **Block Labels**: Always use block labels
+    
     > Why? If you do not name a block, the AVM leaves the innermost iterating block that contains the LEAVE statement. The same is applicable to UNDO and NEXT statements. THis can cause unexpected behavior
 
     ```openedge
@@ -848,8 +917,9 @@
     
     ```
     
-<a name="assign--statement"></a><a name="10.3"></a>
+<a name="assign--statement"></a><a name="10.2"></a>
   - [10.2](#assign--statement) **Assign Statement**: Always use ASSIGN statement (even on single assignments)
+    
     > Why? This method allows you to change several values with minimum I/O processing. Otherwise, the AVM re-indexes records at the end of each statement that changes the value of an index component.
     
     ```openedge
@@ -858,8 +928,9 @@
            member.ssn  = '000-00-0000' WHEN lKeepSSN
            member.mid  = IF NOT lKeepSSN THEN '111' ELSE '000-00-0000'.
     ```  
-<a name="use--substitute"></a><a name="10.4"></a>
-  - [10.4](#use--substitute) **Use Substitute**: Use SUBSTITUTE to concatenate multiple values
+<a name="use--substitute"></a><a name="10.3"></a>
+  - [10.3](#use--substitute) **Use Substitute**: Use SUBSTITUTE to concatenate multiple values
+    
     > Why? If you try to concatenate values and one of the values is ? the entire result becomes ?, which is in most cases an undesirable result.
     
     ```openedge
