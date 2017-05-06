@@ -24,7 +24,7 @@
     /* bad (error is suppressed, cMemberName is never assigned */
     ASSIGN iMemberNumber = INTEGER("ABC")
            cMemberName   = 'ABC' NO-ERROR.
-
+        
     /* good (ver 1) - using structured error handling */
     ASSIGN iMemberNumber = INTEGER("ABC")
            cMemberName   = 'ABC'.
@@ -32,7 +32,7 @@
     CATCH eExc AS Progress.Lang.ProError:
       MESSAGE "Error:" + eExc:GetMessage(1).
     END.
-
+        
     /* good (ver 2) - classic error handling (split safe assignment from unsafe) */
     ASSIGN cMemberName   = 'ABC'.
     ASSIGN iMemberNumber = INTEGER("ABC") NO-ERROR.
@@ -45,140 +45,144 @@
 <a name="no--error"></a><a name="2.2"></a>
   - [2.2](#routine-level) **BLOCK-LEVEL THROW** Always use BLOCK-LEVEL ON ERROR UNDO, THROW statement
 
-   > Why? It changes the default ON ERROR directive to UNDO, THROW for all blocks (from default UNDO, LEAVE or UNDO, RETRY)
+    > Why? It changes the default ON ERROR directive to UNDO, THROW for all blocks (from default UNDO, LEAVE or UNDO, RETRY)
 
-   > Note: Use this parameter in legacy systems only. For new development use _-undothrow 2_ to set BLOCK-LEVEL ON ERROR UNDO, THROW everywhere
+    > Note: Use this parameter in legacy systems only. For new development use _-undothrow 2_ to set BLOCK-LEVEL ON ERROR UNDO, THROW everywhere
 
-   > Note: Use in new modules or when you confident that the change in existing code is not going to break error handling
+    > Note: Use in new modules or when you confident that the change in existing code is not going to break error handling
 
-   ```openedge
-   /* bad (default ON ERROR directive used) */
-   RUN internalProcedure.
+    ```openedge
+    /* bad (default ON ERROR directive used) */
+    RUN internalProcedure.
+        
+    CATCH eExc AS Progress.Lang.AppError:
+        /* this will never be executed */
+    END.
+        
+    PROCEDURE internalProcedure:
+        UNDO, THROW NEW Progress.Lang.AppError('Error String', 1000).
+    END.
+    ```
 
-   CATCH eExc AS Progress.Lang.AppError:
-     /* this will never be executed */
-   END.
-
-   PROCEDURE internalProcedure:
-     UNDO, THROW NEW Progress.Lang.AppError('Error String', 1000).
-   END.
-   ```
-
-   ```openedge
-   /* bad (routine-level doesn't cover FOR loops) */
-   ROUTINE-LEVEL ON ERROR UNDO, THROW.
-   RUN internalProcedure.
-
-   CATCH eExc AS Progress.Lang.AppError:
-     /* this will never be executed */
-   END.
-
-   PROCEDURE internalProcedure:
-     FOR EACH bMemberRecord NO-LOCK:
-         IF bMemberRecord.memberDOB LT 01/01/1910 THEN
-             UNDO, THROW NEW Progress.Lang.AppError('Found member with invalid DOB', 1000).
-     END.
-   END.
-   ```
+    ```openedge
+    /* bad (routine-level doesn't cover FOR loops) */
+    ROUTINE-LEVEL ON ERROR UNDO, THROW.
+    RUN internalProcedure.
+        
+    CATCH eExc AS Progress.Lang.AppError:
+        /* this will never be executed */
+    END.
+        
+    PROCEDURE internalProcedure:
+        FOR EACH bMemberRecord NO-LOCK:
+            IF bMemberRecord.memberDOB LT 01/01/1910 THEN
+                UNDO, THROW NEW Progress.Lang.AppError('Found member with invalid DOB', 1000).
+        END.
+    END.
+    ```
 
 <a name="no--error"></a><a name="2.3"></a>
   - [2.3](#catch-block) **CATCH/THROW** Use CATCH/THROW instead of classic error handling (NO-ERROR / ERROR-STATUS).
 
-  > Why? One place to catch all errors.
-
-  > Why? No need to handle errors every time they occur. No need to return error as output parameter and then handle them on every call.
-
-  ```openedge
-  /* bad */
-  RUN myCheck (OUTPUT cErrorMessage) NO-ERROR.
-  IF ERROR-STATUS:ERROR THEN
-    MESSAGE "Error: " + ERROR-STATUS:GET-MESSAGE(1).
-  ELSE IF cErrorMessage GT '' THEN
-    MESSAGE "Error: " + cErrorMessage.
-
-  PROCEDURE myCheck:
-    DEFINE OUTPUT PARAMETER opoStatusMessage AS CHARACTER NO-UNDO.
-
-    IF NOT CAN-FIND (FIRST member) THEN
-      DO:
-        ASSIGN opoStatusMessage = 'Can not find member, try again'.
-        RETURN.
-      END.
-  END.
-
-  /* good (any application or system error will be caught by CATCH block) */
-  RUN myCheck.
-
-  CATCH eExc AS Progress.Lang.ProError:
-      MESSAGE "Error: " + eExc:GetMessage(1).
-  END.
-
-  PROCEDURE myCheck:
-    IF NOT CAN-FIND (FIRST member) THEN
-      UNDO, THROW NEW Progress.Lang.AppError('Can not find member, try again', 1000).
+    > Why? One place to catch all errors.
+    
+    > Why? No need to handle errors every time they occur. No need to return error as output parameter and then handle them on every call.
+    
+    > Why not? When working with FIND use NO-ERROR and check buffer availability
+    
+    ```openedge
+    /* bad */
+    RUN myCheck (OUTPUT cErrorMessage) NO-ERROR.
+    IF ERROR-STATUS:ERROR THEN
+        MESSAGE "Error: " + ERROR-STATUS:GET-MESSAGE(1).
+    ELSE IF cErrorMessage GT '' THEN
+        MESSAGE "Error: " + cErrorMessage.
+        
+    PROCEDURE myCheck:
+        DEFINE OUTPUT PARAMETER opcStatusMessage AS CHARACTER NO-UNDO.
+        
+        IF NOT CAN-FIND (FIRST member) THEN
+          DO:
+            ASSIGN opoStatusMessage = 'Can not find member, try again'.
+            RETURN.
+          END.
     END.
-
-  ```
+        
+    /* good (any application or system error will be caught by CATCH block) */
+    RUN myCheck.
+        
+    CATCH eExc AS Progress.Lang.ProError:
+        MESSAGE "Error: " + eExc:GetMessage(1).
+    END.
+        
+    PROCEDURE myCheck:
+        IF NOT CAN-FIND (FIRST member) THEN
+            UNDO, THROW NEW Progress.Lang.AppError('Can not find member, try again', 1000).
+    END.
+    
+    ```
 
 <a name="catch--many"></a><a name="2.4"></a>
   - [2.4](#catch-many) **CATCH MANY** Use multiple catch blocks if you need to handle errors differently based on error type (only if you need to handle errors differently)
 
-  ```openedge
-  /* bad (one catch - multiple error types) */
-  ASSIGN iMemberId = INTEGER(ipcParsedMemberId).
-  FIND FIRST member NO-LOCK
-       WHERE memberId = iMemberId NO-ERROR.
-  IF NOT AVAILABLE member THEN
-    UNDO, THROW NEW Progress.Lang.AppError('Invalid Member Id', 1000).
+    > Note: If you have multiple catch blocks put most specific first and then the most generic. If the first catch matches the exception, it executes, if it doesn't, the next one is tried
 
-  CATCH eExc AS Progress.Lang.Error:
-    IF TYPE-OF(eExc, Progress.Lang.AppError) THEN
-      RETURN 'Invalid Application Error: ' + eExc:GetMessage(1).
-    ELSE
-      RETURN 'Invalid System Error: ' + eExc:GetMessage(1).
-  END.
-
-  /* good */
-  ASSIGN iMemberId = INTEGER(ipcParsedMemberId).
-  FIND FIRST member NO-LOCK
-       WHERE memberId = iMemberId NO-ERROR.
-  IF NOT AVAILABLE member THEN
-    UNDO, THROW NEW Progress.Lang.AppError('Invalid Member Id', 1000).
-
-  CATCH eExcApp AS Progress.Lang.AppError:
-    RETURN 'Invalid Application Error: ' + eExcApp:GetMessage(1).
-  END.
-
-  CATCH eExcSys AS Progress.Lang.Error:
-    RETURN 'Invalid System Error: ' + eExcSys:GetMessage(1).
-  END.
-  ```
-
-  ```openedge
-  /* bad (multiple catch blocks - the same error handling) */
-  FIND FIRST member NO-LOCK
+    ```openedge
+    /* bad (one catch - multiple error types) */
+    ASSIGN iMemberId = INTEGER(ipcParsedMemberId).
+    FIND FIRST member NO-LOCK
+         WHERE memberId = iMemberId NO-ERROR.
+    IF NOT AVAILABLE member THEN
+        UNDO, THROW NEW Progress.Lang.AppError('Invalid Member Id', 1000).
+        
+    CATCH eExc AS Progress.Lang.Error:
+        IF TYPE-OF(eExc, Progress.Lang.AppError) THEN
+            RETURN 'Invalid Application Error: ' + eExc:GetMessage(1).
+        ELSE
+            RETURN 'Invalid System Error: ' + eExc:GetMessage(1).
+    END.
+        
+    /* good */
+    ASSIGN iMemberId = INTEGER(ipcParsedMemberId).
+    FIND FIRST member NO-LOCK
+         WHERE memberId = iMemberId NO-ERROR.
+    IF NOT AVAILABLE member THEN
+        UNDO, THROW NEW Progress.Lang.AppError('Invalid Member Id', 1000).
+        
+    CATCH eExcApp AS Progress.Lang.AppError:
+        RETURN 'Invalid Application Error: ' + eExcApp:GetMessage(1).
+    END.
+        
+    CATCH eExcSys AS Progress.Lang.Error:
+        RETURN 'Invalid System Error: ' + eExcSys:GetMessage(1).
+    END.
+    ```
+    
+    ```openedge
+    /* bad (multiple catch blocks - the same error handling) */
+    FIND FIRST member NO-LOCK
+         WHERE memberId = 123 NO-ERROR.
+    IF NOT AVAILABLE member THEN
+        UNDO, THROW NEW Progress.Lang.AppError('Invalid Member Id', 1000).
+        
+    CATCH eExcApp AS Progress.Lang.AppError:
+        RETURN 'Error: ' + eExcApp:GetMessage(1).
+    END CATCH.
+        
+    CATCH eExcSys AS Progress.Lang.Error:
+        RETURN 'Error: ' + eExcSys:GetMessage(1).
+    END CATCH.
+    
+    /* good */
+    FIND FIRST member NO-LOCK
        WHERE memberId = 123 NO-ERROR.
-  IF NOT AVAILABLE member THEN
-    UNDO, THROW NEW Progress.Lang.AppError('Invalid Member Id', 1000).
-
-  CATCH eExcApp AS Progress.Lang.AppError:
-    RETURN 'Error: ' + eExcApp:GetMessage(1).
-  END CATCH.
-
-  CATCH eExcSys AS Progress.Lang.Error:
-    RETURN 'Error: ' + eExcSys:GetMessage(1).
-  END CATCH.
-
-  /* good */
-  FIND FIRST member NO-LOCK
-       WHERE memberId = 123 NO-ERROR.
-  IF NOT AVAILABLE member THEN
-    UNDO, THROW NEW Progress.Lang.AppError('Invalid Member Id', 1000).
-
-  CATCH eExc AS Progress.Lang.Error:
-    RETURN 'Error: ' + eExc:GetMessage(1).
-  END CATCH.
-  ```
+    IF NOT AVAILABLE member THEN
+        UNDO, THROW NEW Progress.Lang.AppError('Invalid Member Id', 1000).
+    
+    CATCH eExc AS Progress.Lang.Error:
+        RETURN 'Error: ' + eExc:GetMessage(1).
+    END CATCH.
+    ```
 
 <a name="no--error"></a><a name="2.5"></a>
   - [2.5](#rethrow) **RE-THROW** Re-throw errors manually only if you need to do extra processing (like logging, or converting general error type to more specific) before error is thrown to upper level
@@ -497,7 +501,6 @@
           RETURN bMember.id.
         END.
     END.
-
     ```
 
 <a name="by--reference"></a><a name="5.3"></a>
