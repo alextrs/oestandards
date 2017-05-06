@@ -626,34 +626,43 @@
   - [7.3](#variable--type) **Variable Type**: Prefix variable name with it's type
 
     ```openedge
-	 DEFINE VARIABLE cMemberName   AS CHARACTER    NO-UNDO.
-	 DEFINE VARIABLE iMemberNumber AS INTEGER      NO-UNDO.
-	 DEFINE VARIABLE dMemberId     AS DECIMAL      NO-UNDO.
-	 DEFINE VARIABLE hMemberReq    AS HANDLE       NO-UNDO.
-	 DEFINE VARIABLE dtStartDate   AS DATE         NO-UNDO.
-	 DEFINE VARIABLE tEndDate      AS DATETIME     NO-UNDO.
-	 DEFINE VARIABLE tzEndDate     AS DATETIME-TZ  NO-UNDO.
-	 DEFINE VARIABLE mMemberDoc    AS MEMPTR       NO-UNDO.
-	 DEFINE VARIABLE rMemberKey    AS RAW          NO-UNDO.
-	 DEFINE VARIABLE oMemberInfo   AS member.info  NO-UNDO.
-	 DEFINE VARIABLE lcMemberNode  AS LONGCHAR     NO-UNDO.
-	 ```
+	DEFINE VARIABLE cMemberName   AS CHARACTER    NO-UNDO.
+	DEFINE VARIABLE iMemberNumber AS INTEGER      NO-UNDO.
+	DEFINE VARIABLE dMemberId     AS DECIMAL      NO-UNDO.
+	DEFINE VARIABLE hMemberReq    AS HANDLE       NO-UNDO.
+	DEFINE VARIABLE dtStartDate   AS DATE         NO-UNDO.
+	DEFINE VARIABLE tEndDate      AS DATETIME     NO-UNDO.
+	DEFINE VARIABLE tzEndDate     AS DATETIME-TZ  NO-UNDO.
+	DEFINE VARIABLE mMemberDoc    AS MEMPTR       NO-UNDO.
+	DEFINE VARIABLE rMemberKey    AS RAW          NO-UNDO.
+	DEFINE VARIABLE oMemberInfo   AS member.info  NO-UNDO.
+	DEFINE VARIABLE lcMemberNode  AS LONGCHAR     NO-UNDO.
+	```
 
-<a name="input--prefix"></a><a name="7.4"></a>
-  - [7.4](#input--prefix) **Prefix input/output variable**: Prefix parameter variable with input/output type (ip - INPUT, op - OUTPUT, oip - INPUT-OUTPUT)
+<a name="prefix-global-variables"></a><a name="7.4"></a>
+  - [7.4](#variable--type) **Global Variables**: Prefix prefix global variables (variables defined in main block or in class body) with 'g'
 
     ```openedge
-	 DEFINE INPUT  PARAMETER ipcMemberName      AS CHARACTER    NO-UNDO.
-	 DEFINE OUTPUT PARAMETER opiMemberNumber    AS INTEGER      NO-UNDO.
-	 DEFINE INPUT-OUTPUT PARAMETER oipdMemberId AS DECIMAL      NO-UNDO.
-
-	 METHOD PUBLIC LOGICAL checkMemberReq (INPUT         iphMemberReq  AS HANDLE).
-	 METHOD PUBLIC LOGICAL checkMemberReq (OUTPUT        opdtStartDate AS DATE).
-	 METHOD PUBLIC LOGICAL checkMemberReq (INPUT-OUTPUT  ioptEndDate   AS DATETIME).
-	 ```
+    DEFINE VARIABLE gcMemberName   AS CHARACTER    NO-UNDO.
+    DEFINE VARIABLE giMemberNumber AS INTEGER      NO-UNDO.
+    DEFINE VARIABLE ghMemberReq    AS HANDLE       NO-UNDO.
+    ```
 
 <a name="input--prefix"></a><a name="7.5"></a>
-  - [7.5](#input--prefix) **Prefix temp-table/prodataset**: Put prefix on temp-tables (tt, bi) and datasets (ds)
+  - [7.5](#input--prefix) **Prefix input/output variable**: Prefix parameter variable with input/output type (ip - INPUT, op - OUTPUT, oip - INPUT-OUTPUT)
+
+    ```openedge
+	DEFINE INPUT  PARAMETER ipcMemberName      AS CHARACTER    NO-UNDO.
+	DEFINE OUTPUT PARAMETER opiMemberNumber    AS INTEGER      NO-UNDO.
+	DEFINE INPUT-OUTPUT PARAMETER oipdMemberId AS DECIMAL      NO-UNDO.
+
+	METHOD PUBLIC LOGICAL checkMemberReq (INPUT         iphMemberReq  AS HANDLE).
+	METHOD PUBLIC LOGICAL checkMemberReq (OUTPUT        opdtStartDate AS DATE).
+	METHOD PUBLIC LOGICAL checkMemberReq (INPUT-OUTPUT  ioptEndDate   AS DATETIME).
+	```
+
+<a name="input--prefix"></a><a name="7.6"></a>
+  - [7.6](#input--prefix) **Prefix temp-table/prodataset**: Put prefix on temp-tables (tt, bi) and datasets (ds)
 
     ```openedge
     /* bad */
@@ -668,8 +677,8 @@
     DEFINE DATASET dsMember...
     ```
 
-<a name="variable--meaning"></a><a name="7.6"></a>
-  - [7.6](#variable--meaning) **Meaningful Names**: Define variables with meaningful names (applicable to context), but avoid extra long names (use abbreviations when possible)
+<a name="variable--meaning"></a><a name="7.7"></a>
+  - [7.7](#variable--meaning) **Meaningful Names**: Define variables with meaningful names (applicable to context), but avoid extra long names (use abbreviations when possible)
 
   	```openedge
 	/* bad */
