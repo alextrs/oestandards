@@ -1,4 +1,4 @@
-# OpenEdge Standards
+# OpenEdge Coding Standards
 
 ## Table of Contents
 1. [Objects](#objects)
