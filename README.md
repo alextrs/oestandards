@@ -75,7 +75,7 @@
         
     PROCEDURE internalProcedure:
         FOR EACH bMemberRecord NO-LOCK:
-            IF bMemberRecord.memberDOB LT 01/01/1910 THEN
+            IF bMemberRecord.memberDOB < 01/01/1910 THEN
                 UNDO, THROW NEW Progress.Lang.AppError('Found member with invalid DOB', 1000).
         END.
     END.
@@ -95,13 +95,13 @@
     RUN myCheck (OUTPUT cErrorMessage) NO-ERROR.
     IF ERROR-STATUS:ERROR THEN
         MESSAGE "Error: " + ERROR-STATUS:GET-MESSAGE(1).
-    ELSE IF cErrorMessage GT '' THEN
+    ELSE IF cErrorMessage > '' THEN
         MESSAGE "Error: " + cErrorMessage.
         
     PROCEDURE myCheck:
         DEFINE OUTPUT PARAMETER opcStatusMessage AS CHARACTER NO-UNDO.
         
-        IF NOT CAN-FIND (FIRST member) THEN
+        IF NOT CAN-FIND (FIRST bMember) THEN
           DO:
             ASSIGN opoStatusMessage = 'Can not find member, try again'.
             RETURN.
@@ -116,7 +116,7 @@
     END.
         
     PROCEDURE myCheck:
-        IF NOT CAN-FIND (FIRST member) THEN
+        IF NOT CAN-FIND (FIRST bMember) THEN
             UNDO, THROW NEW Progress.Lang.AppError('Can not find member, try again', 1000).
     END.
     
@@ -130,9 +130,9 @@
     ```openedge
     /* bad (one catch - multiple error types) */
     ASSIGN iMemberId = INTEGER(ipcParsedMemberId).
-    FIND FIRST member NO-LOCK
-         WHERE memberId = iMemberId NO-ERROR.
-    IF NOT AVAILABLE member THEN
+    FIND FIRST bMember NO-LOCK
+         WHERE bMember.memberId = iMemberId NO-ERROR.
+    IF NOT AVAILABLE bMember THEN
         UNDO, THROW NEW Progress.Lang.AppError('Invalid Member Id', 1000).
         
     CATCH eExc AS Progress.Lang.Error:
@@ -144,9 +144,9 @@
         
     /* good */
     ASSIGN iMemberId = INTEGER(ipcParsedMemberId).
-    FIND FIRST member NO-LOCK
-         WHERE memberId = iMemberId NO-ERROR.
-    IF NOT AVAILABLE member THEN
+    FIND FIRST bMember NO-LOCK
+         WHERE bMember.memberId = iMemberId NO-ERROR.
+    IF NOT AVAILABLE bMember THEN
         UNDO, THROW NEW Progress.Lang.AppError('Invalid Member Id', 1000).
         
     CATCH eExcApp AS Progress.Lang.AppError:
@@ -160,9 +160,9 @@
     
     ```openedge
     /* bad (multiple catch blocks - the same error handling) */
-    FIND FIRST member NO-LOCK
-         WHERE memberId = 123 NO-ERROR.
-    IF NOT AVAILABLE member THEN
+    FIND FIRST bMember NO-LOCK
+         WHERE bMember.memberId = 123 NO-ERROR.
+    IF NOT AVAILABLE bMember THEN
         UNDO, THROW NEW Progress.Lang.AppError('Invalid Member Id', 1000).
         
     CATCH eExcApp AS Progress.Lang.AppError:
@@ -174,9 +174,9 @@
     END CATCH.
     
     /* good */
-    FIND FIRST member NO-LOCK
-       WHERE memberId = 123 NO-ERROR.
-    IF NOT AVAILABLE member THEN
+    FIND FIRST bMember NO-LOCK
+         WHERE bMember.memberId = 123 NO-ERROR.
+    IF NOT AVAILABLE bMember THEN
         UNDO, THROW NEW Progress.Lang.AppError('Invalid Member Id', 1000).
     
     CATCH eExc AS Progress.Lang.Error:
@@ -194,22 +194,22 @@
     ASSIGN iMemberId = INTEGER('ABC_123').
 
     CATCH eExc AS Progress.Lang.ProError:
-      UNDO, THROW eExc.
+        UNDO, THROW eExc.
     END CATCH.
-
+        
     /* good (convert General error into ParseError) */
     ASSIGN iMemberId = INTEGER('ABC_123').
 
     CATCH eExc AS Progress.Lang.ProError:
-      UNDO, THROW NEW Mhp.Errors.ParseError(eExc:GetMessage(1), eExc:GetNumber(1)).
+        UNDO, THROW NEW Mhp.Errors.ParseError(eExc:GetMessage(1), eExc:GetNumber(1)).
     END CATCH.
-
+        
     /* good (write log message and throw error - use only at top most level) */
     ASSIGN iMemberId = INTEGER('ABC_123').
 
     CATCH eExc AS Progress.Lang.ProError:
-      logger:error(eExc).
-      UNDO, THROW NEW Mhp.Errors.ParseError(eExc:GetMessage(1), eExc:GetNumber(1)).
+        logger:error(eExc).
+        UNDO, THROW NEW Mhp.Errors.ParseError(eExc:GetMessage(1), eExc:GetNumber(1)).
     END CATCH.
     ```
 
@@ -222,44 +222,44 @@
 
     ```openedge
     /* bad */
-    FIND FIRST member
-         WHERE member.id EQ 0.346544767...
-    FOR EACH member:...
-    CAN-FIND (FIRST member WHERE member.id EQ 0.346544767)...
+    FIND FIRST bMember
+         WHERE bMember.id EQ 0.346544767...
+    FOR EACH bMember:...
+    CAN-FIND (FIRST bMember WHERE bMember.id EQ 0.346544767)...
 
     /* good */
-    FIND FIRST member NO-LOCK
-         WHERE member.id EQ 0.346544767...
-    FOR EACH member NO-LOCK:...
-    CAN-FIND (FIRST member NO-LOCK
-              WHERE member.id EQ 0.346544767)...
+    FIND FIRST bMember NO-LOCK
+         WHERE bMember.id EQ 0.346544767...
+    FOR EACH bMember NO-LOCK:...
+    CAN-FIND (FIRST bMember NO-LOCK
+              WHERE bMember.id EQ 0.346544767)...
     ```
 <a name="exp-trans-scope"></a><a name="3.2"></a>
   - [3.2](#exp--trans--scope) **Transaction Scope**: Always explicitly define the transaction scope and strong scope applicable buffer
 
     ```openedge
     /* bad */
-    FIND FIRST provider EXCLUSIVE-LOCK NO-ERROR.
-    IF AVAILABLE provider THEN
-      ASSIGN provider.name = 'New Provider':U.
+    FIND FIRST bProvider EXCLUSIVE-LOCK NO-ERROR.
+    IF AVAILABLE bProvider THEN
+        ASSIGN bProvider.name = 'New Provider':U.
     /* ... some code... */
-    FOR EACH member EXCLUSIVE-LOCK:
-      ASSIGN member.memberName = 'New member name':U.
+    FOR EACH bMember EXCLUSIVE-LOCK:
+        ASSIGN bMember.memberName = 'New member name':U.
     END.
 
     /* good (provider should be updated separately from members) */
-    DO FOR provider TRANSACTION:
-      FIND FIRST provider EXCLUSIVE-LOCK
-           WHERE provider.id EQ 0.657532547 NO-ERROR.
-      IF AVAILABLE provider THEN
-        ASSIGN provider.name = 'New Provider':U.
+    DO FOR bProvider TRANSACTION:
+        FIND FIRST bProvider EXCLUSIVE-LOCK
+             WHERE bProvider.id = 0.657532547 NO-ERROR.
+        IF AVAILABLE bProvider THEN
+            ASSIGN bProvider.name = 'New Provider':U.
     END.
     /* ... some code... */
     FOR EACH bMember NO-LOCK
-       WHERE bMember.category EQ 0.17567323 TRANSACTION:
-      FIND FIRST bMember2 EXCLUSIVE-LOCK
-           WHERE ROWID(bMember2) EQ ROWID(bMember).
-      ASSIGN bMember2.memberName = 'New member name':U.
+       WHERE bMember.category = 0.17567323 TRANSACTION:
+        FIND FIRST bMember2 EXCLUSIVE-LOCK
+             WHERE ROWID(bMember2) = ROWID(bMember).
+        ASSIGN bMember2.memberName = 'New member name':U.
     END.
     ```
 
@@ -270,18 +270,18 @@
 
     ```openedge
     /* bad */
-    FIND FIRST member EXCLUSIVE-LOCK
-         WHERE member.id EQ 0.346544767 NO-WAIT NO-ERROR.
-    IF NOT AVAILABLE member THEN
-      CREATE member.
+    FIND FIRST bMember EXCLUSIVE-LOCK
+         WHERE bMember.id = 0.346544767 NO-WAIT NO-ERROR.
+    IF NOT AVAILABLE bMember THEN
+        CREATE bMember.
 
     /* good */
-    FIND FIRST member EXCLUSIVE-LOCK
-         WHERE member.id EQ 0.346544767 NO-WAIT NO-ERROR.
-    IF LOCKED member THEN
-      UNDO, THROW NEW Progress.Lang.AppError('Member record is currently locked, please, try again later', 1000).
-    ELSE IF NOT AVAILABLE member THEN
-      CREATE member.
+    FIND FIRST bMember EXCLUSIVE-LOCK
+         WHERE bMember.id = 0.346544767 NO-WAIT NO-ERROR.
+    IF LOCKED bMember THEN
+        UNDO, THROW NEW Progress.Lang.AppError('Member record is currently locked, please, try again later', 1000).
+    ELSE IF NOT AVAILABLE bMember THEN
+        CREATE bMember.
     ```
 
 <a name="no--recid"></a><a name="3.4"></a>
@@ -293,8 +293,8 @@
 
     ```openedge
     /* good */
-    FIND FIRST member NO-LOCK
-         WHERE ROWID(member) EQ rMemberRowId NO-ERROR.
+    FIND FIRST bMember NO-LOCK
+         WHERE ROWID(bMember) = rMemberRowId NO-ERROR.
     ```
 
 <a name="use--canfind"></a><a name="3.5"></a>
@@ -304,16 +304,16 @@
 
     ```openedge
     /* bad */
-    FIND FIRST member NO-LOCK
-         WHERE ROWID(member) EQ rMemberRowId NO-ERROR.
-    IF AVAIABLE member THEN
+    FIND FIRST bMember NO-LOCK
+         WHERE ROWID(bMember) = rMemberRowId NO-ERROR.
+    IF AVAIABLE bMember THEN
         RETURN TRUE.
     ELSE
         RETURN FALSE.
 
     /* good */
-    RETURN CAN-FIND (FIRST member NO-LOCK
-                     WHERE ROWID(member) EQ rMemberRowId).
+    RETURN CAN-FIND (FIRST bMember NO-LOCK
+                     WHERE ROWID(bMember) = rMemberRowId).
     ```
 
 <a name="use--table--name"></a><a name="3.6"></a>
@@ -321,14 +321,14 @@
 
     ```openedge
     /* bad */
-    FIND FIRST member NO-LOCK NO-ERROR.
-    IF AVAIABLE member THEN
+    FIND FIRST bMember NO-LOCK NO-ERROR.
+    IF AVAIABLE bMember THEN
         RETURN memberId.
 
     /* good */
-    FIND FIRST member NO-LOCK NO-ERROR.
-    IF AVAIABLE member THEN
-        RETURN member.memberId.
+    FIND FIRST bMember NO-LOCK NO-ERROR.
+    IF AVAIABLE bMember THEN
+        RETURN bMember.memberId.
     ```
 
 <a name="use--index"></a><a name="3.7"></a>
@@ -342,22 +342,22 @@
 
     ```openedge
     /* bad */
-    FOR EACH member NO-LOCK
-       WHERE member.DOB > 01/01/1982 USE-INDEX memberSSNIdx:
+    FOR EACH bMember NO-LOCK
+       WHERE bMember.DOB > 01/01/1982 USE-INDEX memberSSNIdx:
     END.
 
     /* good (let AVM to choose index automatically). Use temp-table with appropriate index, if you need to have different order in UI */
-    FOR EACH member NO-LOCK
-       WHERE member.DOB > 01/01/1982:
+    FOR EACH bMember NO-LOCK
+       WHERE bMember.DOB > 01/01/1982:
     END.
 
     /* good (if the whole table scan is needed) */
-    FOR EACH member NO-LOCK TABLE-SCAN:
+    FOR EACH bMember NO-LOCK TABLE-SCAN:
     END.
 
     /* good (AVM will use index, if available, to prepare sorted result) */
     /* IMPORTANT: Be careful when combining WHERE and BY statement (use XREF to see used index) */
-    FOR EACH member NO-LOCK BY member.firstName:
+    FOR EACH bMember NO-LOCK BY bMember.firstName:
     END.
     ```
 
@@ -439,7 +439,7 @@
     /* bad */
 
     /* removed as part of fix for PL-43516674 */
-    /* IF member.memberId EQ dInvMemberId THEN
+    /* IF bMember.memberId = dInvMemberId THEN
          DO:
            ...
          END. */
@@ -460,14 +460,14 @@
     ```openedge
     /* we have two single field indexes (benefitCodeIdx and memberIdIdx) */
     /* bad (only one index will be used) */
-    FIND FIRST memberBenefit NO-LOCK
-         WHERE memberBenefit.memberId    EQ 0.34521543
-           AND memberBenefir.benefidCode EQ 'BLCA' NO-ERROR.
+    FIND FIRST bMemberBenefit NO-LOCK
+         WHERE bMemberBenefit.memberId    = 0.34521543
+           AND bMemberBenefit.benefidCode = 'BLCA' NO-ERROR.
 
     /* good (both indexes will be used) */
-    FOR FIRST memberBenefit NO-LOCK
-        WHERE memberBenefit.memberId    EQ 0.34521543
-          AND memberBenefir.benefidCode EQ 'BLCA':
+    FOR FIRST bMemberBenefit NO-LOCK
+        WHERE bMemberBenefit.memberId    = 0.34521543
+          AND bMemberBenefit.benefidCode = 'BLCA':
     END.
     ```
 
@@ -483,23 +483,23 @@
     ```openedge
     /* bad (if this find was called from static/singleton class - record will stay locked) */
     METHOD PUBLIC CHARACTER getMember():
-      FIND FIRST member EXSLUSIVE-LOCK.
-      IF AVAILABLE member THEN
-        DO:
-          ASSIGN member.memberViewCount = member.memberViewCount - 1.
-          RETURN member.id.
-        END.
+        FIND FIRST member EXSLUSIVE-LOCK.
+        IF AVAILABLE member THEN
+          DO:
+            ASSIGN member.memberViewCount = member.memberViewCount - 1.
+            RETURN member.id.
+          END.
     END.
 
     /* good (if this find was called from static/singleton class - record will lock will be released) */
     METHOD PUBLIC CHARACTER getMember():
-      DEFINE BUFFER bMember FOR member.
-      FIND FIRST bMember EXSLUSIVE-LOCK.
-      IF AVAILABLE bMember THEN
-        DO:
-          ASSIGN bMember.memberViewCount = bMember.memberViewCount - 1.
-          RETURN bMember.id.
-        END.
+        DEFINE BUFFER bMember FOR member.
+        FIND FIRST bMember EXSLUSIVE-LOCK.
+        IF AVAILABLE bMember THEN
+          DO:
+            ASSIGN bMember.memberViewCount = bMember.memberViewCount - 1.
+            RETURN bMember.id.
+          END.
     END.
     ```
 
@@ -521,7 +521,7 @@
 
 ## Variables
 
-<a name="record--locking"></a><a name="6.1"></a>
+<a name="no--undo"></a><a name="6.1"></a>
   - [6.1](#no--undo) **No-undo**: Always use NO-UNDO on all temp-tables and variables
 
     > Why? When you define variables, the AVM allocates what amounts to a record buffer for them, where each variable becomes a field in the buffer. There are in fact two such buffers, one for variables whose values can be undone when a transaction is rolled back and one for those that can't. There is extra overhead associated with keeping track of the before-image for each variable that can be undone, and this behavior is rarely needed.
@@ -586,21 +586,21 @@
 	```openedge
 	/* bad */
 	DEFINE PROPERTY Member_Name AS CHARACTER NO-UNDO
-	  GET.
-	  SET.
+	    GET.
+	    SET.
 	DEFINE PROPERTY MeMbErNaMe AS CHARACTER NO-UNDO
-	  GET.
-	  SET.
+	    GET.
+	    SET.
 
 	/* good for GUI for .NET */
 	DEFINE PROPERTY MemberName AS CHARACTER NO-UNDO
-	  GET.
-	  SET.
+	    GET.
+	    SET.
 
 	/* good */
 	DEFINE PROPERTY memberName AS CHARACTER NO-UNDO
-	  GET.
-	  SET.
+	    GET.
+	    SET.
 	```
 
 <a name="buffer--name"></a><a name="7.2"></a>
@@ -654,11 +654,11 @@
     ```openedge
 	DEFINE INPUT  PARAMETER ipcMemberName      AS CHARACTER    NO-UNDO.
 	DEFINE OUTPUT PARAMETER opiMemberNumber    AS INTEGER      NO-UNDO.
-	DEFINE INPUT-OUTPUT PARAMETER oipdMemberId AS DECIMAL      NO-UNDO.
+	DEFINE INPUT-OUTPUT PARAMETER iopdMemberId AS DECIMAL      NO-UNDO.
 
 	METHOD PUBLIC LOGICAL checkMemberReq (INPUT         iphMemberReq  AS HANDLE).
 	METHOD PUBLIC LOGICAL checkMemberReq (OUTPUT        opdtStartDate AS DATE).
-	METHOD PUBLIC LOGICAL checkMemberReq (INPUT-OUTPUT  ioptEndDate   AS DATETIME).
+	METHOD PUBLIC LOGICAL checkMemberReq (INPUT-OUTPUT  iotEndDate    AS DATETIME).
 	```
 
 <a name="input--prefix"></a><a name="7.6"></a>
@@ -706,28 +706,28 @@
     ```openedge
     /* bad */
     PROCEDURE checkMember:
-      DEFINE OUTPUT PARAMETER oplValidMember AS LOGICAL NO-UNDO.
-      DEFINE VARIABLE hMemberBuffer AS HANDLE NO-UNDO.
+        DEFINE OUTPUT PARAMETER oplValidMember AS LOGICAL NO-UNDO.
+        DEFINE VARIABLE hMemberBuffer AS HANDLE NO-UNDO.
 
-      CREATE BUFFER hMemberBuffer FOR db + '.memberInfo'.
-      /* ... */
-      ASSIGN oplValidMember = TRUE.
-      RETURN.
+        CREATE BUFFER hMemberBuffer FOR db + '.memberInfo'.
+        /* ... */
+        ASSIGN oplValidMember = TRUE.
+        RETURN.
     END.
 
     /* good */
     PROCEDURE checkMember:
-      DEFINE OUTPUT PARAMETER oplValidMember AS LOGICAL NO-UNDO.
-      DEFINE VARIABLE hMemberBuffer AS HANDLE NO-UNDO.
+        DEFINE OUTPUT PARAMETER oplValidMember AS LOGICAL NO-UNDO.
+        DEFINE VARIABLE hMemberBuffer AS HANDLE NO-UNDO.
 
-      CREATE BUFFER hMemberBuffer FOR db + '.memberInfo'.
-      /* ... */
-      ASSIGN oplValidMember = TRUE.
-      RETURN.
-      FINALLY:
-        IF VALID-HANDLE(hMemberBuffer) THEN
-          DELETE OBJECT hMemberBuffer.
-      END.
+        CREATE BUFFER hMemberBuffer FOR db + '.memberInfo'.
+        /* ... */
+        ASSIGN oplValidMember = TRUE.
+        RETURN.
+        FINALLY:
+            IF VALID-HANDLE(hMemberBuffer) THEN
+                DELETE OBJECT hMemberBuffer.
+        END.
     END.
     ```
 
@@ -741,35 +741,35 @@
     ```openedge
     /* bad (cause memory leak) */
     PROCEDURE parseFile:
-      DEFINE VARIABLE mBlob AS MEMPTR NO-UNDO.
-      ...
-      COPY-LOB FILE 'path-to-file' TO mBlob.
-      ...
+        DEFINE VARIABLE mBlob AS MEMPTR NO-UNDO.
+        ...
+        COPY-LOB FILE 'path-to-file' TO mBlob.
+        ...
     END.
 
     /* good */
     PROCEDURE parseFile:
-      DEFINE VARIABLE mBlob AS MEMPTR NO-UNDO.
-      ...
-      COPY-LOB FILE 'path-to-file' TO mBlob.
-      ...
-      FINALLY:
-        ASSIGN SET-SIZE(mBlob) = 0.
-      END.
+        DEFINE VARIABLE mBlob AS MEMPTR NO-UNDO.
+        ...
+        COPY-LOB FILE 'path-to-file' TO mBlob.
+        ...
+        FINALLY:
+            ASSIGN SET-SIZE(mBlob) = 0.
+        END.
     END.
 
     /* good */
     RUN parseFile(OUTPUT mLoadedFile).
 
     FINALLY:
-      ASSIGN SET-SIZE(mLoadedFile) = 0.
+        ASSIGN SET-SIZE(mLoadedFile) = 0.
     END.
 
     PROCEDURE loadFile:
-      DEFINE OUTPUT PARAMETER opmBlob AS MEMPTR NO-UNDO.
-      ...
-      COPY-LOB FILE 'path-to-file' TO opmBlob.
-      ...
+        DEFINE OUTPUT PARAMETER opmBlob AS MEMPTR NO-UNDO.
+        ...
+        COPY-LOB FILE 'path-to-file' TO opmBlob.
+        ...
     END.
 
     ```
@@ -780,27 +780,25 @@
 
     ```openedge
     /* bad */
-    IF NOT isValidMember(member.id) THEN
+    IF NOT isValidMember(bMember.id) THEN
       DO:
         UNDO, THROW NEW Progress.Lang.AppError('Invalid Member', 1000).
       END.
 
     /* good */
-    IF NOT isValidMember(member.id) THEN
+    IF NOT isValidMember(bMember.id) THEN
       UNDO, THROW NEW Progress.Lang.AppError('Invalid Member', 1000).
     ```
 
 <a name="comp--operators"></a><a name="9.2"></a>
-  - [9.2](#comp--operators) **Comparison operators**: Use comparison operators: EQ(=), LT(<), LE(<=), GT(>), GE(>=), NE(<>)
-
-    > Why? It's easier to see/parse places where we compare or assign values
+  - [9.2](#comp--operators) **No Comparison operators**: Avoid using comparison operators: EQ(=), LT(<), LE(<=), GT(>), GE(>=), NE(<>)
 
     ```openedge
     /* bad */
-    IF memberDOB > 01/01/1980 THEN
+    IF memberDOB GT 01/01/1980 THEN
 
     /* good */
-    IF memberDOB GT 01/01/1980 THEN
+    IF memberDOB > 01/01/1980 THEN
     ```
 
 <a name="same--line-dot"></a><a name="9.3"></a>
@@ -823,7 +821,7 @@
 
     /* bad */
     FOR EACH memberInfo NO-LOCK
-       WHERE memberInfo.memberId EQ 0.54764767
+       WHERE memberInfo.memberId = 0.54764767
        :
 
     /* good */
@@ -835,7 +833,7 @@
 
     /* good */
     FOR EACH memberInfo NO-LOCK
-       WHERE memberInfo.memberId EQ 0.54764767:
+       WHERE memberInfo.memberId = 0.54764767:
     ```
 
 <a name="blk--indentation"></a><a name="9.4"></a>
@@ -864,11 +862,11 @@
 
 
     /* good (new line + tab) */
-    IF memberDOB GT 01/01/1980 THEN
+    IF memberDOB > 01/01/1980 THEN
         RETURN memberName.
 
     /* good (new line + do (2 chars) + new line + tab) */
-    IF memberDOB GT 01/01/1980 THEN
+    IF memberDOB > 01/01/1980 THEN
       DO:
         ...
         RETURN memberName.
@@ -881,12 +879,12 @@
 
     ```openedge
     /* bad */
-    FOR EACH memberInfo FIELDS(birthDate gender) NO-LOCK WHERE memberInfo.birthDate GT 01/01/1920 AND memberInfo.gender EQ 'M':
+    FOR EACH memberInfo FIELDS(birthDate gender) NO-LOCK WHERE memberInfo.birthDate > 01/01/1920 AND memberInfo.gender = 'M':
 
     /* good */
     FOR EACH memberInfo FIELDS(birthDate gender) NO-LOCK
-       WHERE memberInfo.birthDate GT 01/01/1920
-         AND memberInfo.gender    EQ 'M'
+       WHERE memberInfo.birthDate > 01/01/1920
+         AND memberInfo.gender    = 'M'
     ```
 
 <a name="method--params"></a><a name="9.6"></a>
@@ -933,25 +931,14 @@
       ...
 
     /* bad (cause unexpected behaviour - last name will be only used if member doesn't have first name) */
-    ASSIGN cMemberFullName = IF cMemberFirstName GT '' THEN cMemberFirstName ELSE '' + ' ' + cMemberLastName.
+    ASSIGN cMemberFullName = IF cMemberFirstName > '' THEN cMemberFirstName ELSE '' + ' ' + cMemberLastName.
 
     /* good */
-    ASSIGN cMemberFullName = (IF cMemberFirstName GT '' THEN cMemberFirstName ELSE '') + ' ' + cMemberLastName.
+    ASSIGN cMemberFullName = (IF cMemberFirstName > '' THEN cMemberFirstName ELSE '') + ' ' + cMemberLastName.
     ```
 
-<a name="single-quotes"></a><a name="9.8"></a>
-  - [9.8](#single-quotes) **Single Quotes**: Use single quotation marks when working with string constants
-
-    ```openedge
-    /* bad */
-    ASSIGN cMemberInfo = "Some Info".
-
-    /* good */
-    ASSIGN cMemberInfo = 'Some Info'.
-    ```
-
-<a name="end--with-type"></a><a name="9.9"></a>
-  - [9.9](#end--with-type) **End with type**: Always specify what is end used for (PROCEDURE, CONSTRUCTOR, DESTRUCTOR, METHOD or FUNCTION)
+<a name="end--with-type"></a><a name="9.8"></a>
+  - [9.8](#end--with-type) **End with type**: Always specify what is end used for (PROCEDURE, CONSTRUCTOR, DESTRUCTOR, METHOD or FUNCTION)
 
     ```openedge
     /* bad */
@@ -987,8 +974,8 @@
     END METHOD.
     ```
 
-<a name="methods--out--return"></a><a name="9.10"></a>
-  - [9.10](#methods--out--return) **Consistent method/function return**: Either return value or use output parameters (don't mix) when working with methods / functions
+<a name="methods--out--return"></a><a name="9.9"></a>
+  - [9.9](#methods--out--return) **Consistent method/function return**: Either return value or use output parameters (don't mix) when working with methods / functions
 
     ```openedge
     /* bad */
@@ -1003,6 +990,81 @@
 
     ```
 
+<a name="no--abbreviate"></a><a name="9.10"></a>
+  - [9.10](#no--abbreviate) **Don't abbreviate**: Don't abbreviate keywords, tables, fields
+  
+      > Why? To make code more readable
+  
+      > Why? To make sure code is compliant with "Strict Compile" mode
+  
+      ```openedge
+      /* bad */
+      DEF VAR iCnt AS INT NO-UNDO.
+        
+      /* good */
+      DEFINE VARIABLE iCnt AS INTEGER NO-UNDO.
+        
+      /* bad (full field name - memberAgeInDays) */
+      FIND FIRST bMember NO-LOCK
+           WHERE bMember.memberAge > 4000.
+        
+      /* good */
+      FIND FIRST bMember NO-LOCK
+           WHERE bMember.memberAgeInDays > 4000.
+      
+      ```
+
+<a name="no--keywords--names"></a><a name="9.11"></a>
+  - [9.11](#no--keywords--names) **No keywords**: Don't use keywords for properties, fields, variables, class names
+  
+    ```openedge
+    /* bad property name */
+    DEFINE PRIVATE PROPERTY GUID AS CHARACTER NO-UNDO
+      GET.
+      SET.
+        
+    /* bad class name */
+    CLASS Message:
+        
+    /* bad temp-table field name */
+    DEFINE TEMP-TABLE ttMemberChanges NO-UNDO
+        FIELD name AS DECIMAL.
+    ```
+
+<a name="backslash"></a><a name="9.12"></a>
+  - [9.12](#backslash) **Backslash**: Prefer to use forward slash to backslash. If forward slash can't be used, escape backslash with a tilde. 
+  
+    > Why? Can cause unexpected behavior as backslash is an escape-character on Linux
+    
+    ```openedge
+    /* bad */
+    OUTPUT TO VALUE(SESSION:TEMP-DIRECTORY + '\export\dexp.txt').
+    /* good (on Windows and Linux) */
+    OUTPUT TO VALUE(SESSION:TEMP-DIRECTORY + '/export/exports.txt').
+        
+    /* bad - result in Linux - HELLO, in Windows - HE\LLO */
+    MESSAGE 'HE\LLO'.
+    /* good - result HE\LLO in Linux and Windows */
+    MESSAGE 'HE~\LLO'.
+    
+    ```
+
+<a name="no--like"></a><a name="9.13"></a>
+  - [9.13](#no--like) **No LIKE** Never use LIKE on database tables 
+
+    > Why? Can cause unexpected results when schema changes (especially important when table is used by REST/SOAP adapter)
+
+    ```
+    /* bad */
+    DEFINE TEMP-TABLE ttMember NO-UNDO LIKE memberInfo.
+        
+    /* good */
+    DEFINE TEMP-TABLE ttMember NO-UNDO
+        FIELD memberName LIKE memberInfo.memberName
+        FIELD memberDOB  LIKE memberInfo.memberDOB
+        ...
+    ```
+
 # Other
 <a name="block--labels"></a><a name="10.1"></a>
   - [10.1](#block--labels) **Block Labels**: Always use block labels
@@ -1012,21 +1074,23 @@
     ```openedge
     /* bad */
     DO TRANSACTION:
-      FOR EACH memberBenefit:
-        ...
-        /* this will affect current iteration only */
-        UNDO, LEAVE.
-      END.
+        FOR EACH bMemberBenefit:
+            ...
+            /* this will affect current iteration only */
+            IF bMemberBenefit.benefitDate > TODAY THEN
+                UNDO, LEAVE.
+        END.
     END.
 
     /* good */
     UpdateMembersBlk:
     DO TRANSACTION:
-      FOR EACH memberBenefit:
-        ...
-        /* this will undo the entire transaction and leave DO block */
-        UNDO UpdateMembersBlk, LEAVE UpdateMembersBlk.
-      END.
+        FOR EACH bMemberBenefit:
+            ...
+            /* this will undo the entire transaction and leave DO block */
+            IF bMemberBenefit.benefitDate > TODAY THEN
+                UNDO UpdateMembersBlk, LEAVE UpdateMembersBlk.
+        END.
     END.
 
     ```
@@ -1037,10 +1101,10 @@
     > Why? This method allows you to change several values with minimum I/O processing. Otherwise, the AVM re-indexes records at the end of each statement that changes the value of an index component.
 
     ```openedge
-    ASSIGN member.dob  = 01/01/1980
-           member.name = 'John'
-           member.ssn  = '000-00-0000' WHEN lKeepSSN
-           member.mid  = IF NOT lKeepSSN THEN '111' ELSE '000-00-0000'.
+    ASSIGN bMember.dob  = 01/01/1980
+           bMember.name = 'John'
+           bMember.ssn  = '000-00-0000' WHEN lKeepSSN
+           bMember.mid  = IF NOT lKeepSSN THEN '111' ELSE '000-00-0000'.
     ```
 <a name="use--substitute"></a><a name="10.3"></a>
   - [10.3](#use--substitute) **Use Substitute**: Use SUBSTITUTE to concatenate multiple values
@@ -1048,9 +1112,9 @@
     > Why? If you try to concatenate values and one of the values is ? the entire result becomes ?, which is in most cases an undesirable result.
     
     ```openedge
-    ASSIGN cMemberName = 'John'
-           dMemberDOB  = 01/01/1980
-           cMemberAge  = ?.
+    ASSIGN cMemberName  = 'John'
+           dtMemberDOB  = 01/01/1980
+           cMemberAge   = ?.
     /* bad - show ? */
     MESSAGE cMemberName + STRING(dMemberDOB) + cMemberAge VIEW-AS ALERT-BOX.
     
