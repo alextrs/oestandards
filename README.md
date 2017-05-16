@@ -49,12 +49,12 @@
 
     > Note: Use this parameter in legacy systems only. For new development use _-undothrow 2_ to set BLOCK-LEVEL ON ERROR UNDO, THROW everywhere
 
-    > Note: Use in new modules or when you confident that the change in existing code is not going to break error handling
+    > Note: Use in new modules or when you're confident that the change in existing code is not going to break error handling
 
     ```openedge
     /* bad (default ON ERROR directive used) */
     RUN internalProcedure.
-        
+
     CATCH eExc AS Progress.Lang.AppError:
         /* this will never be executed */
     END.
@@ -62,6 +62,20 @@
     PROCEDURE internalProcedure:
         UNDO, THROW NEW Progress.Lang.AppError('Error String', 1000).
     END.
+
+    /* good */
+    BLOCK-LEVEL ON ERROR UNDO, THROW.
+
+    RUN internalProcedure.
+
+    CATCH eExc AS Progress.Lang.AppError:
+        /* error will be caught here */
+    END.
+
+    PROCEDURE internalProcedure:
+        UNDO, THROW NEW Progress.Lang.AppError('Error String', 1000).
+    END.
+
     ```
 
     ```openedge
@@ -73,6 +87,22 @@
         /* this will never be executed */
     END.
         
+    PROCEDURE internalProcedure:
+        FOR EACH bMemberRecord NO-LOCK:
+            IF bMemberRecord.memberDOB < 01/01/1910 THEN
+                UNDO, THROW NEW Progress.Lang.AppError('Found member with invalid DOB', 1000).
+        END.
+    END.
+
+    /* good */
+    BLOCK-LEVEL ON ERROR UNDO, THROW.
+
+    RUN internalProcedure.
+
+    CATCH eExc AS Progress.Lang.AppError:
+        /* error will be caught here */
+    END.
+
     PROCEDURE internalProcedure:
         FOR EACH bMemberRecord NO-LOCK:
             IF bMemberRecord.memberDOB < 01/01/1910 THEN
@@ -319,6 +349,10 @@
 <a name="use--table--name"></a><a name="3.6"></a>
   - [3.6](#use--table--name) **TABLE-NAME**: Always qualify table name for field name
 
+      > Why? To make code more readable
+
+      > Why? To make sure code is compliant with "Strict Compile" mode
+
     ```openedge
     /* bad */
     FIND FIRST bMember NO-LOCK NO-ERROR.
@@ -552,56 +586,56 @@
 <a name="variable--case"></a><a name="7.1"></a>
   - [7.1](#variable-case) **Variable Case**: Use appropriate case when naming variable
 
-  	* When define variable use camelCase
+    * When define variable use camelCase
 
-  	```openedge
-  	/* bad */
-  	DEFINE VARIABLE Member_Name AS CHARACTER NO-UNDO.
-  	DEFINE VARIABLE membername  AS CHARACTER NO-UNDO.
-  	DEFINE VARIABLE MeMbErNaMe  AS CHARACTER NO-UNDO.
-  	/* good */
-  	DEFINE VARIABLE cMemberName AS CHARACTER NO-UNDO.
-	```
+    ```openedge
+    /* bad */
+    DEFINE VARIABLE Member_Name AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE membername  AS CHARACTER NO-UNDO.
+    DEFINE VARIABLE MeMbErNaMe  AS CHARACTER NO-UNDO.
+    /* good */
+    DEFINE VARIABLE cMemberName AS CHARACTER NO-UNDO.
+    ```
 
-	* When define constants use UPPER_CASE
+    * When define constants use UPPER_CASE
 
-	```openedge
-  	/* bad */
-  	DEFINE PRIVATE PROPERTY lineseparator AS CHARACTER NO-UNDO INIT '|':U
-  		GET.
-  	DEFINE PRIVATE PROPERTY LineSeparator AS CHARACTER NO-UNDO INIT '|':U
-  		GET.
-  	DEFINE PRIVATE PROPERTY cLineSeparator AS CHARACTER NO-UNDO INIT '|':U
-  		GET.
-  	DEFINE PRIVATE PROPERTY LINESEPARATOR AS CHARACTER NO-UNDO INIT '|':U
-  		GET.
+    ```openedge
+    /* bad */
+    DEFINE PRIVATE PROPERTY lineseparator AS CHARACTER NO-UNDO INIT '|':U
+        GET.
+    DEFINE PRIVATE PROPERTY LineSeparator AS CHARACTER NO-UNDO INIT '|':U
+        GET.
+    DEFINE PRIVATE PROPERTY cLineSeparator AS CHARACTER NO-UNDO INIT '|':U
+        GET.
+    DEFINE PRIVATE PROPERTY LINESEPARATOR AS CHARACTER NO-UNDO INIT '|':U
+        GET.
 
-  	/* good */
-  	DEFINE PRIVATE PROPERTY LINE_SEPARATOR AS CHARACTER NO-UNDO INIT '|':U
-  		GET.
-	```
+    /* good */
+    DEFINE PRIVATE PROPERTY LINE_SEPARATOR AS CHARACTER NO-UNDO INIT '|':U
+        GET.
+    ```
 
-	* When define property use camelCase, unless you do it for GUI for .NET, then use PascalCase
+    * When define property use camelCase, unless you do it for GUI for .NET, then use PascalCase
 
-	```openedge
-	/* bad */
-	DEFINE PROPERTY Member_Name AS CHARACTER NO-UNDO
-	    GET.
-	    SET.
-	DEFINE PROPERTY MeMbErNaMe AS CHARACTER NO-UNDO
-	    GET.
-	    SET.
+    ```openedge
+    /* bad */
+    DEFINE PROPERTY Member_Name AS CHARACTER NO-UNDO
+        GET.
+        SET.
+    DEFINE PROPERTY MeMbErNaMe AS CHARACTER NO-UNDO
+        GET.
+        SET.
 
-	/* good for GUI for .NET */
-	DEFINE PROPERTY MemberName AS CHARACTER NO-UNDO
-	    GET.
-	    SET.
+    /* good for GUI for .NET */
+    DEFINE PROPERTY MemberName AS CHARACTER NO-UNDO
+        GET.
+        SET.
 
-	/* good */
-	DEFINE PROPERTY memberName AS CHARACTER NO-UNDO
-	    GET.
-	    SET.
-	```
+    /* good */
+    DEFINE PROPERTY memberName AS CHARACTER NO-UNDO
+        GET.
+        SET.
+    ```
 
 <a name="buffer--name"></a><a name="7.2"></a>
   - [7.2](#buffer--name) **Buffer Name**: When define buffer, prefix with b
@@ -680,22 +714,22 @@
 <a name="variable--meaning"></a><a name="7.7"></a>
   - [7.7](#variable--meaning) **Meaningful Names**: Define variables with meaningful names (applicable to context), but avoid extra long names (use abbreviations when possible)
 
-  	```openedge
-	/* bad */
-	DEFINE VARIABLE cMI AS CHARACTER NO-UNDO.
-	/* good */
-	DEFINE VARIABLE cMemberInfo AS CHARACTER NO-UNDO.
+    ```openedge
+    /* bad */
+    DEFINE VARIABLE cMI AS CHARACTER NO-UNDO.
+    /* good */
+    DEFINE VARIABLE cMemberInfo AS CHARACTER NO-UNDO.
 
-	/* bad */
-	DEFINE VARIABLE cNationalDrugCode AS CHARACTER NO-UNDO.
-	/* good */
-	DEFINE VARIABLE cNDC AS CHARACTER NO-UNDO.
+    /* bad */
+    DEFINE VARIABLE cNationalDrugCode AS CHARACTER NO-UNDO.
+    /* good */
+    DEFINE VARIABLE cNDC AS CHARACTER NO-UNDO.
 
-	/* bad */
-	DEFINE VARIABLE cNationalDrugCodeRequiredIdentification NO-UNDO.
-	/* good */
-	DEFINE VARIABLE cNDCReqId AS CHARACTER NO-UNDO.
-	```
+    /* bad */
+    DEFINE VARIABLE cNationalDrugCodeRequiredIdentification NO-UNDO.
+    /* good */
+    DEFINE VARIABLE cNDCReqId AS CHARACTER NO-UNDO.
+    ```
 
 ## Dynamic Objects
 <a name="delete--objects"></a><a name="8.1"></a>
@@ -1022,13 +1056,25 @@
     DEFINE PRIVATE PROPERTY GUID AS CHARACTER NO-UNDO
       GET.
       SET.
-        
+
+    /* good property name */
+    DEFINE PRIVATE PROPERTY memberGUID AS CHARACTER NO-UNDO
+      GET.
+      SET.
+
     /* bad class name */
     CLASS Message:
-        
+
+    /* good class name */
+    CLASS JmsMessage:
+
     /* bad temp-table field name */
     DEFINE TEMP-TABLE ttMemberChanges NO-UNDO
         FIELD name AS DECIMAL.
+
+    /* good temp-table field name */
+    DEFINE TEMP-TABLE ttMemberChanges NO-UNDO
+        FIELD termName AS DECIMAL.
     ```
 
 <a name="backslash"></a><a name="9.12"></a>
@@ -1054,7 +1100,7 @@
 
     > Why? Can cause unexpected results when schema changes (especially important when table is used by REST/SOAP adapter)
 
-    ```
+    ```openedge
     /* bad */
     DEFINE TEMP-TABLE ttMember NO-UNDO LIKE memberInfo.
         
