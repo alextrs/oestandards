@@ -1121,8 +1121,8 @@
     /* bad */
     DO TRANSACTION:
         FOR EACH bMemberBenefit NO-LOCK:
-            FIND FIRST bMemberBenefit EXCLUSIVE-LOCK
-                 WHERE ROWID(bMemberBenefit) EQ ROWID(bMemberBenefit).
+            FIND FIRST bMemberBenefit2 EXCLUSIVE-LOCK
+                 WHERE ROWID(bMemberBenefit2) EQ ROWID(bMemberBenefit).
             ...
             /* this will affect current iteration only */
             IF bMemberBenefit.benefitDate > TODAY THEN
@@ -1134,8 +1134,8 @@
     UpdateMembersBlk:
     DO TRANSACTION:
         FOR EACH bMemberBenefit NO-LOCK:
-            FIND FIRST bMemberBenefit EXCLUSIVE-LOCK
-                 WHERE ROWID(bMemberBenefit) EQ ROWID(bMemberBenefit).
+            FIND FIRST bMemberBenefit2 EXCLUSIVE-LOCK
+                 WHERE ROWID(bMemberBenefit2) EQ ROWID(bMemberBenefit).
             ...
             /* this will undo the entire transaction and leave DO block */
             IF bMemberBenefit.benefitDate > TODAY THEN
