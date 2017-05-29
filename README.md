@@ -36,10 +36,9 @@
     /* good (ver 2) - classic error handling (split safe assignment from unsafe) */
     ASSIGN cMemberName   = 'ABC'.
     ASSIGN iMemberNumber = INTEGER("ABC") NO-ERROR.
-    IF ERROR-STATUS:ERROR THEN
-      DO:
+    IF ERROR-STATUS:ERROR THEN DO:
         /* handle error here */
-      END.
+    END.
     ```
 
 <a name="no--error"></a><a name="2.2"></a>
@@ -131,11 +130,10 @@
     PROCEDURE myCheck:
         DEFINE OUTPUT PARAMETER opcStatusMessage AS CHARACTER NO-UNDO.
         
-        IF NOT CAN-FIND (FIRST bMember) THEN
-          DO:
+        IF NOT CAN-FIND (FIRST bMember) THEN DO:
             ASSIGN opoStatusMessage = 'Can not find member, try again'.
             RETURN.
-          END.
+        END.
     END.
         
     /* good (any application or system error will be caught by CATCH block) */
@@ -473,10 +471,9 @@
     /* bad */
 
     /* removed as part of fix for PL-43516674 */
-    /* IF bMember.memberId = dInvMemberId THEN
-         DO:
+    /* IF bMember.memberId = dInvMemberId THEN DO:
            ...
-         END. */
+       END. */
 
     /* temporary remove as part of N project */
     /* RUN makeMemberAsInvalid. */
@@ -518,22 +515,20 @@
     /* bad (if this find was called from static/singleton class - record will stay locked) */
     METHOD PUBLIC CHARACTER getMember():
         FIND FIRST member EXSLUSIVE-LOCK.
-        IF AVAILABLE member THEN
-          DO:
+        IF AVAILABLE member THEN DO:
             ASSIGN member.memberViewCount = member.memberViewCount - 1.
             RETURN member.id.
-          END.
+        END.
     END.
 
     /* good (if this find was called from static/singleton class - record will lock will be released) */
     METHOD PUBLIC CHARACTER getMember():
         DEFINE BUFFER bMember FOR member.
         FIND FIRST bMember EXSLUSIVE-LOCK.
-        IF AVAILABLE bMember THEN
-          DO:
+        IF AVAILABLE bMember THEN DO:
             ASSIGN bMember.memberViewCount = bMember.memberViewCount - 1.
             RETURN bMember.id.
-          END.
+        END.
     END.
     ```
 
@@ -814,10 +809,9 @@
 
     ```openedge
     /* bad */
-    IF NOT isValidMember(bMember.id) THEN
-      DO:
+    IF NOT isValidMember(bMember.id) THEN DO:
         UNDO, THROW NEW Progress.Lang.AppError('Invalid Member', 1000).
-      END.
+    END.
 
     /* good */
     IF NOT isValidMember(bMember.id) THEN
@@ -871,16 +865,17 @@
     ```
 
 <a name="blk--indentation"></a><a name="9.4"></a>
-  - [9.4](#blk--indentation) **Block Indentation**: Use correct block indentation: DO statements on next line with 2 characters, otherwise 4 characters. __Make sure you configured Tab policy in Eclipse to use Spaces only (4 spaces per tab)__
+  - [9.4](#blk--indentation) **Block Indentation**: Use correct block indentation, put DO statement on the same line. __Make sure you configured Tab policy in Eclipse to use Spaces only (4 spaces per tab)__
 
     ```openedge
     /* bad */
     IF memberDOB > 01/01/1980 THEN ASSIGN RETURN memberName.
 
     /* bad */
-    IF memberDOB > 01/01/1980 THEN DO:
-      RETURN memberName.
-    END.
+    IF memberDOB > 01/01/1980 THEN 
+      DO:
+        RETURN memberName.
+      END.
 
     /* bad */
     IF memberDOB > 01/01/1980 THEN DO:
@@ -900,11 +895,10 @@
         RETURN memberName.
 
     /* good (new line + do (2 chars) + new line + tab) */
-    IF memberDOB > 01/01/1980 THEN
-      DO:
+    IF memberDOB > 01/01/1980 THEN DO:
         ...
         RETURN memberName.
-      END.
+    END.
 
     ```
 
@@ -1170,4 +1164,72 @@
     
     /* good - show 'John 01/01/1980 ?' */
     MESSAGE SUBSTITUTE('&1 &2 &3', cMemberName, dMemberDOB, cMemberAge).
-    ```  
+    ```
+      
+    
+<a name="in--procedure"></a><a name="10.4"></a>
+  - [10.4](#in--procedure) **IN THIS-PROCEDURE**: When call internal procedures use RUN ... IN THIS-PROCEDURE.
+
+    > Why? To prevent STOP condition when the specified procedure is not found.
+    
+    ```openedge
+    /* good */
+    RUN myProcedureName IN THIS-PROCEDURE.
+
+<a name="class--structure"></a><a name="10.5"></a>
+  - [10.5](#class--structure) **Class Structure**: Use the following class structure
+  
+    ```openedge
+    
+    /* Class Description */
+        
+    /* USING Statements */
+        
+    /* Routine Level */
+        
+    /* Preprocessor Definitions */
+        
+    CLASS className...:
+            
+        /* Includes with temp-tables/dataset definitions */
+            
+        /* Define Variables */
+            
+        /* Define Events */
+            
+        /* Define Properties */
+        
+        /* Constructors */
+        
+        /* Methods */
+        
+        /* Destructor */
+            
+    END CLASS.
+    
+    ```
+
+<a name="procedure--structure"></a><a name="10.6"></a>
+  - [10.6](#procedure--structure) **Procedure Structure**: Use the following procedure structure
+  
+    ```openedge
+    
+    /* USING Statements */
+        
+    /* Routine Level */
+        
+    /* Preprocessor Definitions */
+        
+    /* Define Input-Output Parameters */
+        
+    /* Includes with temp-tables/dataset definitions */
+        
+    /* Define Local Variables */
+        
+    /* Define Functions */
+        
+    /* MAIN-BLOCK */
+        
+    /* Define Procedures */
+        
+    ```
