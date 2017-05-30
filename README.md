@@ -1213,7 +1213,9 @@
   - [10.6](#procedure--structure) **Procedure Structure**: Use the following procedure structure
   
     ```openedge
-    
+
+    /* Procedure Description */
+
     /* USING Statements */
         
     /* Routine Level */
