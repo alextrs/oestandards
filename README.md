@@ -894,7 +894,7 @@
     IF memberDOB > 01/01/1980 THEN
         RETURN memberName.
 
-    /* good (new line + do (2 chars) + new line + tab) */
+    /* good */
     IF memberDOB > 01/01/1980 THEN DO:
         ...
         RETURN memberName.
