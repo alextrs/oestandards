@@ -542,10 +542,10 @@
     ```openedge
 
     /* bad */
-    RUN getMemberInfo.p ( OUTPUT DATASET dsMemberInfo ).
+    RUN getMemberInfo.p ( OUTPUT DATASET pdsMemberInfo ).
 
     /* good */
-    RUN getMemberInfo.p ( OUTPUT DATASET dsMemberInfo BY-REFERENCE ).
+    RUN getMemberInfo.p ( OUTPUT DATASET pdsMemberInfo BY-REFERENCE ).
     ```
 
 ## Variables
@@ -691,19 +691,19 @@
 	```
 
 <a name="input--prefix"></a><a name="7.6"></a>
-  - [7.6](#input--prefix) **Prefix temp-table/prodataset**: Put prefix on temp-tables (tt, bi) and datasets (ds)
+  - [7.6](#input--prefix) **Prefix temp-table/prodataset**: Put prefix on temp-tables (tt, bi), datasets (pds) and datasources (ds)
 
     ```openedge
     /* bad */
     DEFINE TEMP-TABLE tbMember...
     DEFINE TEMP-TABLE ttblMember...
     DEFINE TEMP-TABLE ttMember NO-UNDO BEFORE-TABLE bttMember...
-    DEFINE DATASET pdsMember...
     DEFINE DATASET pMember...
 
     /* good */
     DEFINE TEMP-TABLE ttMember NO-UNDO BEFORE-TABLE bittMember...
-    DEFINE DATASET dsMember...
+    DEFINE DATASET pdsMember...
+    DEFINE DATA-SOURCE dsMember...
     ```
 
 <a name="variable--meaning"></a><a name="7.7"></a>
@@ -890,7 +890,7 @@
         RETURN memberCode.
 
 
-    /* good (new line + tab) */
+   /* good (new line + tab) */
     IF memberDOB > 01/01/1980 THEN
         RETURN memberName.
 
