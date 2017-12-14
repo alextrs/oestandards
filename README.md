@@ -678,7 +678,7 @@
     ```
 
 <a name="input--prefix"></a><a name="7.5"></a>
-  - [7.5](#input--prefix) **Prefix input/output variable**: Prefix parameter variable with input/output type (ip - INPUT, op - OUTPUT, oip - INPUT-OUTPUT)
+  - [7.5](#input--prefix) **Prefix input/output variable**: Prefix parameter variable with input/output type (ip - INPUT, op - OUTPUT, iop - INPUT-OUTPUT)
 
     ```openedge
 	DEFINE INPUT  PARAMETER ipcMemberName      AS CHARACTER    NO-UNDO.
